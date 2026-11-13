@@ -18,6 +18,7 @@ from ..services.simulation_runner import (
     RunnerStatus,
     SimulationStopPending,
 )
+from ..services.simulation_analytics import build_analytics
 from ..services.zep_graph_memory_updater import ZepGraphMemoryManager
 from ..utils.logger import get_logger
 from ..utils.locale import t, get_locale, set_locale
@@ -2135,6 +2136,35 @@ def get_agent_stats(simulation_id: str):
         
     except Exception as e:
         logger.error(f"获取Agent统计失败: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
+@simulation_bp.route('/<simulation_id>/analytics', methods=['GET'])
+def get_simulation_analytics(simulation_id: str):
+    """
+    Hivemind analytics: activity per round, agent interaction network,
+    influence ranking and most-engaged posts, computed from the full action
+    logs. Read-only; does not touch the simulation or the graph.
+    """
+    try:
+        actions = [a.to_dict() for a in SimulationRunner.get_all_actions(simulation_id)]
+        run_state = SimulationRunner.get_run_state(simulation_id)
+        total_rounds = run_state.total_rounds if run_state else 0
+        data = build_analytics(actions, total_rounds=total_rounds)
+        data["simulation_id"] = simulation_id
+        data["run"] = {
+            "status": run_state.runner_status.value if run_state else None,
+            "current_round": run_state.current_round if run_state else None,
+            "total_rounds": total_rounds,
+        }
+        return jsonify({"success": True, "data": data})
+
+    except Exception as e:
+        logger.error(f"Failed to build analytics: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),

@@ -31,6 +31,24 @@ Node 22 comes from nvm (Vite 7 needs Node 20.19 or newer). Python 3.12 venv is i
 Stack: Flask API (`backend/app/api/{graph,simulation,report}.py`, about 20k lines of Python)
 and a Vue 3 + Vite frontend (`frontend/`).
 
+## What Hivemind adds
+
+Rule: new features read the outputs MiroFish already produces and never change the
+prediction pipeline (ontology, personas, OASIS run, report agent), so forecasts stay
+identical to upstream.
+
+- **English by default.** UI, LLM output and backend messages default to `en`; the language
+  switcher still offers the other locales.
+- **Simulation Analytics** (`/simulation/<id>/analytics`, "Analytics" button in Step 3).
+  Backed by `GET /api/simulation/<id>/analytics` (`backend/app/services/simulation_analytics.py`),
+  a read-only aggregation of `{twitter,reddit}/actions.jsonl`:
+  - influence network: who engaged with whom (support / oppose / reply), node size =
+    engagement received, node colour = support share, round-by-round replay
+  - activity per round stacked by kind, with a table view
+  - top influencers (engagement, reach, support share) and a per-agent drill-down
+  - most-engaged posts and the action-type mix
+  - updates every 5 s while a simulation is running; `?agent=Name` deep-links a selection
+
 ## Re-engineering candidates
 
 - **Drop the Zep Cloud dependency.** It is the one hard external service. Replace it with a

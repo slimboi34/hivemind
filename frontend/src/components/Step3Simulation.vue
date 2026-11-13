@@ -91,7 +91,14 @@
       </div>
 
       <div class="action-controls">
-        <button 
+        <button
+          class="action-btn secondary"
+          :disabled="!simulationId"
+          @click="openAnalytics"
+        >
+          {{ $t('analytics.open') }}
+        </button>
+        <button
           class="action-btn primary"
           :disabled="phase !== 2 || isGeneratingReport"
           @click="handleNextStep"
@@ -314,6 +321,13 @@ const props = defineProps({
 const emit = defineEmits(['go-back', 'next-step', 'add-log', 'update-status'])
 
 const router = useRouter()
+
+// Hivemind: open the analytics view in a new tab so the running simulation view keeps polling
+const openAnalytics = () => {
+  if (!props.simulationId) return
+  const { href } = router.resolve({ name: 'Analytics', params: { simulationId: props.simulationId } })
+  window.open(href, '_blank')
+}
 
 // State
 const isGeneratingReport = ref(false)
@@ -891,6 +905,21 @@ onUnmounted(() => {
 .action-btn.primary {
   background: #000;
   color: #FFF;
+}
+
+.action-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn.secondary {
+  background: #FFF;
+  color: #000;
+  border: 1px solid #CCC;
+}
+
+.action-btn.secondary:hover:not(:disabled) {
+  border-color: #000;
 }
 
 .action-btn.primary:hover:not(:disabled) {

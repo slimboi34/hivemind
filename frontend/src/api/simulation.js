@@ -155,6 +155,14 @@ export const getSimulationActions = (simulationId, params = {}) => {
 }
 
 /**
+ * Hivemind analytics: activity per round, interaction network, influence and top posts
+ * @param {string} simulationId
+ */
+export const getSimulationAnalytics = (simulationId) => {
+  return service.get(`/api/simulation/${simulationId}/analytics`)
+}
+
+/**
  * 关闭模拟环境（优雅退出）
  * @param {Object} data - { simulation_id, timeout? }
  */
