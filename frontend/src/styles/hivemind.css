@@ -1,0 +1,519 @@
+/*
+ * Hivemind design system.
+ * Built on the Hivemind brand kit in /brand (see brand/board.html and docs/BRAND.md).
+ * Imported once, in src/main.js. Every view and component reads these tokens.
+ */
+
+/* ------------------------------------------------------------------ tokens */
+:root {
+  /* Brand kit colours (brand/board.html) */
+  --hm-ink: #16140F;         /* Ink: text, the nav bar, dark panels */
+  --hm-paper: #F3F0E8;       /* Paper: the page */
+  --hm-signal: #D4890A;      /* Signal: amber on light. The single accent */
+  --hm-on-ink: #F0A818;      /* On ink: amber on dark */
+  --hm-muted: #8A8478;       /* board label colour; decoration and labels on ink */
+  --hm-nav-text: #B7B1A6;    /* secondary text in the nav bar */
+
+  /* Ink scale (warm, derived from Ink and Paper) */
+  --hm-ink-2: #37332B;
+  --hm-ink-3: #555048;
+  --hm-ink-4: #736D63;       /* smallest text colour that passes AA on Paper */
+  --hm-ink-5: #A7A196;       /* placeholders, disabled, decoration only */
+
+  /* Surfaces and rules */
+  --hm-surface: #FFFFFF;     /* cards, inputs, menus, chart cards */
+  --hm-surface-2: #F8F6F1;   /* wells inside cards */
+  --hm-surface-3: #EDE9E0;   /* tracks, hover, chips */
+  --hm-line: #E4DDD2;        /* board rule colour */
+  --hm-line-strong: #D2CABD;
+
+  /* Signal states */
+  --hm-signal-hover: #B87505;
+  --hm-signal-soft: #F7E9CB;
+  --hm-signal-ink: #7A4D00;  /* text on Signal soft */
+
+  /* Status (never amber: amber is the brand accent and a chart series) */
+  --hm-success: #1E7346;
+  --hm-success-dot: #2E9A5E;
+  --hm-success-soft: #E2F0E5;
+  --hm-danger: #B3261E;
+  --hm-danger-dot: #D9483B;
+  --hm-danger-soft: #F8E3DF;
+
+  /* Ink panels: the nav bar and live log consoles */
+  --hm-console-bg: #16140F;
+  --hm-console-raised: #211E17;
+  --hm-console-line: #2F2B23;
+  --hm-console-text: #E9E4D9;
+  --hm-console-muted: #8A8478;
+
+  /* Type: Space Grotesk for words, JetBrains Mono for the nav, labels and data */
+  --hm-font-sans: 'Space Grotesk', 'Noto Sans SC', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --hm-font-display: 'Space Grotesk', 'Noto Sans SC', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --hm-font-mono: 'JetBrains Mono', 'Noto Sans SC', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --hm-text-2xs: 11px;
+  --hm-text-xs: 12px;
+  --hm-text-sm: 13px;
+  --hm-text-base: 14px;
+  --hm-text-md: 16px;
+  --hm-text-lg: 18px;
+  --hm-text-xl: 22px;
+  --hm-text-2xl: 28px;
+  --hm-text-3xl: 40px;
+  --hm-text-4xl: 60px;
+
+  --hm-leading-tight: 1.05;
+  --hm-leading-snug: 1.3;
+  --hm-leading-normal: 1.5;
+  --hm-leading-relaxed: 1.7;
+
+  --hm-tracking-display: -0.02em;  /* board lede and wordmark */
+  --hm-tracking-label: 0.14em;     /* board labels and nav */
+
+  /* Space: 4px grid */
+  --hm-space-1: 4px;
+  --hm-space-2: 8px;
+  --hm-space-3: 12px;
+  --hm-space-4: 16px;
+  --hm-space-5: 20px;
+  --hm-space-6: 24px;
+  --hm-space-8: 32px;
+  --hm-space-10: 40px;
+  --hm-space-12: 48px;
+  --hm-space-16: 64px;
+
+  /* Radii: tight, like the board */
+  --hm-radius-xs: 3px;
+  --hm-radius-sm: 4px;
+  --hm-radius-md: 6px;
+  --hm-radius-lg: 8px;
+  --hm-radius-pill: 999px;
+
+  /* Elevation (warm-tinted) */
+  --hm-shadow-xs: 0 1px 2px rgba(22, 20, 15, 0.06);
+  --hm-shadow-sm: 0 1px 2px rgba(22, 20, 15, 0.05), 0 2px 8px rgba(22, 20, 15, 0.05);
+  --hm-shadow-md: 0 2px 4px rgba(22, 20, 15, 0.05), 0 8px 24px rgba(22, 20, 15, 0.09);
+  --hm-shadow-lg: 0 4px 8px rgba(22, 20, 15, 0.06), 0 24px 56px rgba(22, 20, 15, 0.2);
+
+  /* Motion */
+  --hm-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --hm-duration-fast: 120ms;
+  --hm-duration: 200ms;
+
+  /* Layout */
+  --hm-header-h: 60px;       /* board nav height */
+  --hm-content-max: 1280px;
+  --hm-overlay: rgba(22, 20, 15, 0.5);
+}
+
+/* -------------------------------------------------------------------- base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  background: var(--hm-paper);
+  color: var(--hm-ink);
+  font-family: var(--hm-font-sans);
+  font-size: var(--hm-text-base);
+  line-height: var(--hm-leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+#app {
+  font-family: var(--hm-font-sans);
+  color: var(--hm-ink);
+  background-color: var(--hm-paper);
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--hm-signal);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #F2D9A6;
+  color: var(--hm-ink);
+}
+
+::placeholder {
+  color: var(--hm-ink-5);
+  opacity: 1;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--hm-line-strong);
+  border: 3px solid transparent;
+  border-radius: var(--hm-radius-pill);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--hm-ink-5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* -------------------------------------------------------------- primitives */
+
+/* Label: the board's JetBrains Mono kicker */
+.hm-eyebrow {
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
+  font-weight: 500;
+  letter-spacing: var(--hm-tracking-label);
+  text-transform: uppercase;
+  color: var(--hm-ink-4);
+}
+
+.hm-mono {
+  font-family: var(--hm-font-mono);
+}
+
+/* Buttons. Primary actions are Signal with Ink text (6.5:1). */
+.hm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hm-space-2);
+  height: 36px;
+  padding: 0 var(--hm-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--hm-radius-sm);
+  font-family: var(--hm-font-sans);
+  font-size: var(--hm-text-sm);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--hm-duration-fast) var(--hm-ease),
+    border-color var(--hm-duration-fast) var(--hm-ease),
+    color var(--hm-duration-fast) var(--hm-ease);
+}
+
+.hm-btn--primary,
+.hm-btn--accent {
+  background: var(--hm-signal);
+  color: var(--hm-ink);
+}
+
+.hm-btn--primary:hover:not(:disabled),
+.hm-btn--accent:hover:not(:disabled) {
+  background: var(--hm-signal-hover);
+}
+
+.hm-btn--ink {
+  background: var(--hm-ink);
+  color: var(--hm-paper);
+}
+
+.hm-btn--ink:hover:not(:disabled) {
+  background: var(--hm-ink-2);
+}
+
+.hm-btn--secondary {
+  background: var(--hm-surface);
+  border-color: var(--hm-line-strong);
+  color: var(--hm-ink);
+}
+
+.hm-btn--secondary:hover:not(:disabled) {
+  background: var(--hm-surface-2);
+  border-color: var(--hm-ink-5);
+}
+
+.hm-btn--ghost {
+  background: transparent;
+  color: var(--hm-ink-3);
+}
+
+.hm-btn--ghost:hover:not(:disabled) {
+  background: var(--hm-surface-3);
+  color: var(--hm-ink);
+}
+
+.hm-btn--sm {
+  height: 30px;
+  padding: 0 var(--hm-space-3);
+  font-size: var(--hm-text-xs);
+}
+
+.hm-btn--lg {
+  height: 48px;
+  padding: 0 var(--hm-space-5);
+  font-size: var(--hm-text-md);
+}
+
+.hm-btn:disabled {
+  background: var(--hm-surface-3);
+  border-color: transparent;
+  color: var(--hm-ink-5);
+  cursor: not-allowed;
+}
+
+/* Cards: white on Paper */
+.hm-card {
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-line);
+  border-radius: var(--hm-radius-lg);
+}
+
+/* Status pills: mono, uppercase, like the nav */
+.hm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 var(--hm-space-2);
+  border-radius: var(--hm-radius-pill);
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--hm-surface-3);
+  color: var(--hm-ink-3);
+}
+
+.hm-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--hm-ink-5);
+  flex-shrink: 0;
+}
+
+.hm-pill--active {
+  background: var(--hm-signal-soft);
+  color: var(--hm-signal-ink);
+}
+
+.hm-pill--active .hm-pill__dot {
+  background: var(--hm-signal);
+  animation: hm-pulse 1.4s var(--hm-ease) infinite;
+}
+
+.hm-pill--success {
+  background: var(--hm-success-soft);
+  color: var(--hm-success);
+}
+
+.hm-pill--success .hm-pill__dot {
+  background: var(--hm-success-dot);
+}
+
+.hm-pill--danger {
+  background: var(--hm-danger-soft);
+  color: var(--hm-danger);
+}
+
+.hm-pill--danger .hm-pill__dot {
+  background: var(--hm-danger-dot);
+}
+
+/* Segmented control (layout switch, chart/table toggle) */
+.hm-segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--hm-surface-3);
+  border-radius: var(--hm-radius-md);
+}
+
+.hm-segmented__btn {
+  height: 28px;
+  padding: 0 var(--hm-space-3);
+  border: none;
+  border-radius: var(--hm-radius-sm);
+  background: transparent;
+  color: var(--hm-ink-3);
+  font-size: var(--hm-text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--hm-duration-fast) var(--hm-ease), color var(--hm-duration-fast) var(--hm-ease);
+}
+
+.hm-segmented__btn:hover {
+  color: var(--hm-ink);
+}
+
+.hm-segmented__btn.active,
+.hm-segmented__btn[aria-pressed='true'] {
+  background: var(--hm-surface);
+  color: var(--hm-ink);
+  box-shadow: var(--hm-shadow-xs);
+}
+
+/* Spinner */
+.hm-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--hm-line-strong);
+  border-top-color: var(--hm-ink);
+  border-radius: 50%;
+  animation: hm-spin 0.8s linear infinite;
+}
+
+/* Empty / loading / error state block */
+.hm-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hm-space-2);
+  padding: var(--hm-space-10) var(--hm-space-6);
+  text-align: center;
+  color: var(--hm-ink-4);
+  font-size: var(--hm-text-sm);
+}
+
+.hm-state__title {
+  color: var(--hm-ink);
+  font-size: var(--hm-text-md);
+  font-weight: 500;
+}
+
+/* ------------------------------------------------- inside the Ink nav bar */
+/* Controls placed in <AppHeader> take the nav's mono, letter-spaced idiom. */
+.hm-nav .hm-pill {
+  height: 24px;
+  padding: 0 var(--hm-space-2);
+  background: transparent;
+  border: 1px solid var(--hm-console-line);
+  color: var(--hm-nav-text);
+  letter-spacing: 0.1em;
+}
+
+.hm-nav .hm-pill--active {
+  color: var(--hm-on-ink);
+  border-color: rgba(240, 168, 24, 0.4);
+}
+
+.hm-nav .hm-pill--active .hm-pill__dot {
+  background: var(--hm-on-ink);
+}
+
+.hm-nav .hm-pill--success {
+  color: var(--hm-paper);
+}
+
+.hm-nav .hm-pill--success .hm-pill__dot {
+  background: #4CC383;
+}
+
+.hm-nav .hm-pill--danger {
+  color: #F2A49C;
+  border-color: rgba(242, 164, 156, 0.4);
+}
+
+.hm-nav .hm-pill--danger .hm-pill__dot {
+  background: #F07167;
+}
+
+.hm-nav .hm-segmented {
+  background: var(--hm-console-raised);
+  border: 1px solid var(--hm-console-line);
+  border-radius: var(--hm-radius-sm);
+  padding: 2px;
+}
+
+.hm-nav .hm-segmented__btn {
+  height: 26px;
+  padding: 0 var(--hm-space-3);
+  border-radius: var(--hm-radius-xs);
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hm-nav-text);
+}
+
+.hm-nav .hm-segmented__btn:hover {
+  color: var(--hm-paper);
+}
+
+.hm-nav .hm-segmented__btn.active,
+.hm-nav .hm-segmented__btn[aria-pressed='true'] {
+  background: var(--hm-ink);
+  color: var(--hm-on-ink);
+  box-shadow: inset 0 0 0 1px var(--hm-console-line);
+}
+
+.hm-nav .hm-btn--secondary,
+.hm-nav .hm-btn--ghost {
+  height: 30px;
+  background: transparent;
+  border: 1px solid var(--hm-console-line);
+  color: var(--hm-nav-text);
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hm-nav .hm-btn--secondary:hover:not(:disabled),
+.hm-nav .hm-btn--ghost:hover:not(:disabled) {
+  background: var(--hm-console-raised);
+  border-color: #4A4438;
+  color: var(--hm-paper);
+}
+
+.hm-nav .hm-btn:disabled {
+  background: transparent;
+  color: #5E584D;
+}
+
+.hm-nav :focus-visible {
+  outline-color: var(--hm-on-ink);
+}
+
+@keyframes hm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes hm-spin {
+  to { transform: rotate(360deg); }
+}

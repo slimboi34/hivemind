@@ -577,115 +577,79 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 容器 */
+/* Past simulations on Home. Card positions come from getCardStyle() in the script. */
 .history-database {
   position: relative;
   width: 100%;
   min-height: 280px;
-  margin-top: 40px;
-  padding: 35px 0 40px;
+  padding: var(--hm-space-10) 0;
+  border-top: 1px solid var(--hm-line);
   overflow: visible;
 }
 
-/* 无项目时简化显示 */
 .history-database.no-projects {
   min-height: auto;
-  padding: 40px 0 20px;
+  padding: var(--hm-space-10) 0 var(--hm-space-5);
 }
 
-/* 技术网格背景 */
+/* The old decorative grid is retired; the page's hairlines carry the structure. */
 .tech-grid-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-  pointer-events: none;
+  display: none;
 }
 
-/* 使用CSS背景图案创建固定间距的正方形网格 */
-.grid-pattern {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-  background-size: 50px 50px;
-  /* 从左上角开始定位，高度变化时只在底部扩展，不影响已有网格位置 */
-  background-position: top left;
-}
-
-.gradient-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.9) 0%, transparent 15%, transparent 85%, rgba(255, 255, 255, 0.9) 100%),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.8) 0%, transparent 20%, transparent 80%, rgba(255, 255, 255, 0.8) 100%);
-  pointer-events: none;
-}
-
-/* 标题区域 */
 .section-header {
   position: relative;
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
-  margin-bottom: 24px;
-  font-family: 'JetBrains Mono', 'SF Mono', monospace;
-  padding: 0 40px;
+  gap: var(--hm-space-5);
+  margin-bottom: var(--hm-space-8);
 }
 
 .section-line {
   flex: 1;
+  max-width: 280px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #E5E7EB, transparent);
-  max-width: 300px;
+  background: var(--hm-line);
 }
 
 .section-title {
-  font-size: 0.8rem;
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
   font-weight: 500;
-  color: #9CA3AF;
-  letter-spacing: 3px;
+  letter-spacing: var(--hm-tracking-label);
   text-transform: uppercase;
+  color: var(--hm-ink-4);
 }
 
-/* 卡片容器 */
+/* Card deck */
 .cards-container {
   position: relative;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 0 40px;
+  padding: 0 var(--hm-space-10);
   transition: min-height 700ms cubic-bezier(0.23, 1, 0.32, 1);
-  /* min-height 由 JS 动态计算，根据卡片数量自适应 */
 }
 
-/* 项目卡片 */
 .project-card {
   position: absolute;
   width: 280px;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 0;
-  padding: 14px;
+  padding: var(--hm-space-4);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-line);
+  border-radius: var(--hm-radius-lg);
+  box-shadow: var(--hm-shadow-xs);
+  overflow: hidden;
   cursor: pointer;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 700ms cubic-bezier(0.23, 1, 0.32, 1), opacity 700ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: box-shadow var(--hm-duration) var(--hm-ease), border-color var(--hm-duration) var(--hm-ease),
+    transform 700ms cubic-bezier(0.23, 1, 0.32, 1), opacity 700ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .project-card:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  border-color: rgba(0, 0, 0, 0.4);
+  border-color: var(--hm-line-strong);
+  box-shadow: var(--hm-shadow-md);
   z-index: 1000 !important;
 }
 
@@ -693,25 +657,24 @@ onUnmounted(() => {
   z-index: 1000 !important;
 }
 
-/* 卡片头部 */
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #F3F4F6;
-  font-family: 'JetBrains Mono', 'SF Mono', monospace;
-  font-size: 0.7rem;
+  margin-bottom: var(--hm-space-3);
+  padding-bottom: var(--hm-space-3);
+  border-bottom: 1px solid var(--hm-line);
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
 }
 
 .card-id {
-  color: #6B7280;
-  letter-spacing: 0.5px;
+  color: var(--hm-ink-3);
   font-weight: 500;
+  letter-spacing: 0.06em;
 }
 
-/* 功能状态图标组 */
+/* Which stages can be reopened: graph, setup, report */
 .card-status-icons {
   display: flex;
   align-items: center;
@@ -719,282 +682,197 @@ onUnmounted(() => {
 }
 
 .status-icon {
-  font-size: 0.75rem;
-  transition: all 0.2s ease;
+  font-size: var(--hm-text-xs);
   cursor: default;
 }
 
 .status-icon.available {
-  opacity: 1;
+  color: var(--hm-ink);
 }
-
-/* 不同功能的颜色 */
-.status-icon:nth-child(1).available { color: #3B82F6; } /* 图谱构建 - 蓝色 */
-.status-icon:nth-child(2).available { color: #F59E0B; } /* 环境搭建 - 橙色 */
-.status-icon:nth-child(3).available { color: #10B981; } /* 分析报告 - 绿色 */
 
 .status-icon.unavailable {
-  color: #D1D5DB;
-  opacity: 0.5;
+  color: var(--hm-ink-5);
+  opacity: 0.6;
 }
 
-/* 轮数进度显示 */
 .card-progress {
   display: flex;
   align-items: center;
   gap: 6px;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-  font-size: 0.65rem;
+  font-weight: 500;
+  font-size: var(--hm-text-2xs);
+  letter-spacing: 0.04em;
 }
 
 .status-dot {
-  font-size: 0.5rem;
+  font-size: 7px;
 }
 
-/* 进度状态颜色 */
-.card-progress.completed { color: #10B981; }    /* 已完成 - 绿色 */
-.card-progress.in-progress { color: #F59E0B; }  /* 进行中 - 橙色 */
-.card-progress.not-started { color: #9CA3AF; }  /* 未开始 - 灰色 */
-.card-status.pending { color: #9CA3AF; }
+.card-progress.completed { color: var(--hm-success); }
+.card-progress.in-progress { color: var(--hm-signal-ink); }
+.card-progress.not-started { color: var(--hm-ink-4); }
+.card-status.pending { color: var(--hm-ink-4); }
 
-/* 文件列表区域 */
+/* Seed documents */
 .card-files-wrapper {
   position: relative;
   width: 100%;
   min-height: 48px;
   max-height: 110px;
-  margin-bottom: 12px;
-  padding: 8px 10px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-  border-radius: 4px;
-  border: 1px solid #e8eaed;
+  margin-bottom: var(--hm-space-3);
+  padding: var(--hm-space-2);
+  background: var(--hm-surface-2);
+  border: 1px solid var(--hm-line);
+  border-radius: var(--hm-radius-md);
   overflow: hidden;
 }
 
 .files-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--hm-space-1);
 }
 
-/* 更多文件提示 */
 .files-more {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3px 6px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
-  color: #6B7280;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 3px;
-  letter-spacing: 0.3px;
+  padding: 2px 6px;
+  font-family: var(--hm-font-mono);
+  font-size: 10px;
+  color: var(--hm-ink-4);
 }
 
 .file-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 6px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 3px;
-  transition: all 0.2s ease;
+  gap: var(--hm-space-2);
+  padding: 3px 4px;
+  border-radius: var(--hm-radius-xs);
 }
 
-.file-item:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: translateX(2px);
-  border-color: #e5e7eb;
-}
-
-/* 简约文件标签样式 */
 .file-tag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  min-width: 30px;
   height: 16px;
   padding: 0 4px;
   border-radius: 2px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.55rem;
-  font-weight: 600;
+  background: var(--hm-surface-3);
+  color: var(--hm-ink-3);
+  font-family: var(--hm-font-mono);
+  font-size: 9px;
+  font-weight: 500;
   line-height: 1;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.2px;
-  flex-shrink: 0;
-  min-width: 28px;
 }
-
-/* 低饱和度配色方案 - Morandi色系 */
-.file-tag.pdf { background: #f2e6e6; color: #a65a5a; }
-.file-tag.doc { background: #e6eff5; color: #5a7ea6; }
-.file-tag.xls { background: #e6f2e8; color: #5aa668; }
-.file-tag.ppt { background: #f5efe6; color: #a6815a; }
-.file-tag.txt { background: #f0f0f0; color: #757575; }
-.file-tag.code { background: #eae6f2; color: #815aa6; }
-.file-tag.img { background: #e6f2f2; color: #5aa6a6; }
-.file-tag.zip { background: #f2f0e6; color: #a69b5a; }
-.file-tag.other { background: #f3f4f6; color: #6b7280; }
 
 .file-name {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.7rem;
-  color: #4b5563;
-  white-space: nowrap;
   overflow: hidden;
+  font-size: var(--hm-text-xs);
+  color: var(--hm-ink-2);
+  white-space: nowrap;
   text-overflow: ellipsis;
-  letter-spacing: 0.1px;
 }
 
-/* 无文件时的占位 */
 .files-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--hm-space-2);
   height: 48px;
-  color: #9CA3AF;
+  color: var(--hm-ink-4);
 }
 
 .empty-file-icon {
-  font-size: 1rem;
   opacity: 0.5;
 }
 
 .empty-file-text {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.5px;
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
 }
 
-/* 悬停时文件区域效果 */
-.project-card:hover .card-files-wrapper {
-  border-color: #d1d5db;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+.corner-mark {
+  display: none;
 }
 
-/* 角落装饰 */
-.corner-mark.top-left-only {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  width: 8px;
-  height: 8px;
-  border-top: 1.5px solid rgba(0, 0, 0, 0.4);
-  border-left: 1.5px solid rgba(0, 0, 0, 0.4);
-  pointer-events: none;
-  z-index: 10;
-}
-
-/* 卡片标题 */
 .card-title {
-  font-family: 'Inter', -apple-system, sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0 0 6px 0;
+  margin: 0 0 var(--hm-space-1);
+  overflow: hidden;
+  font-size: var(--hm-text-base);
+  font-weight: 500;
   line-height: 1.4;
+  color: var(--hm-ink);
   white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.3s ease;
 }
 
-.project-card:hover .card-title {
-  color: #2563EB;
-}
-
-/* 卡片描述 */
 .card-desc {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.75rem;
-  color: #6B7280;
-  margin: 0 0 16px 0;
-  line-height: 1.5;
-  height: 34px;
-  overflow: hidden;
   display: -webkit-box;
+  height: 36px;
+  margin: 0 0 var(--hm-space-4);
+  overflow: hidden;
+  font-size: var(--hm-text-xs);
+  line-height: 1.5;
+  color: var(--hm-ink-4);
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
-/* 卡片底部 */
 .card-footer {
   position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 12px;
-  border-top: 1px solid #F3F4F6;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.65rem;
-  color: #9CA3AF;
-  font-weight: 500;
+  padding-top: var(--hm-space-3);
+  border-top: 1px solid var(--hm-line);
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
+  color: var(--hm-ink-4);
 }
 
-/* 日期时间组合 */
 .card-datetime {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--hm-space-2);
 }
 
-/* 底部轮数进度显示 */
-.card-footer .card-progress {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-  font-size: 0.65rem;
-}
-
-.card-footer .status-dot {
-  font-size: 0.5rem;
-}
-
-/* 进度状态颜色 - 底部 */
-.card-footer .card-progress.completed { color: #10B981; }
-.card-footer .card-progress.in-progress { color: #F59E0B; }
-.card-footer .card-progress.not-started { color: #9CA3AF; }
-
-/* 底部装饰线 */
+/* Signal bar slides in under the hovered card */
 .card-bottom-line {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 2px;
-  width: 0;
-  background-color: #000;
-  transition: width 0.5s cubic-bezier(0.23, 1, 0.32, 1);
   z-index: 20;
+  width: 0;
+  height: 2px;
+  background-color: var(--hm-signal);
+  transition: width 0.5s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .project-card:hover .card-bottom-line {
   width: 100%;
 }
 
-/* 空状态 */
-.empty-state, .loading-state {
+.empty-state,
+.loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 48px;
-  color: #9CA3AF;
-}
-
-.empty-icon {
-  font-size: 2rem;
-  opacity: 0.5;
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-12);
+  color: var(--hm-ink-4);
+  font-size: var(--hm-text-sm);
 }
 
 .loading-spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #E5E7EB;
-  border-top-color: #6B7280;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--hm-line-strong);
+  border-top-color: var(--hm-ink);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -1003,7 +881,6 @@ onUnmounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* 响应式 */
 @media (max-width: 1200px) {
   .project-card {
     width: 240px;
@@ -1012,43 +889,40 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .cards-container {
-    padding: 0 20px;
+    padding: 0 var(--hm-space-5);
   }
+
   .project-card {
     width: 200px;
   }
 }
 
-/* ===== 历史回放详情弹窗样式 ===== */
+/* ------------------------------------------------- replay dialog */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  inset: 0;
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
-  backdrop-filter: blur(4px);
+  background: var(--hm-overlay);
+  backdrop-filter: blur(2px);
 }
 
 .modal-content {
-  background: #FFFFFF;
   width: 560px;
   max-width: 90vw;
   max-height: 85vh;
   overflow-y: auto;
-  border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-line);
+  border-radius: var(--hm-radius-lg);
+  box-shadow: var(--hm-shadow-lg);
 }
 
-/* 动画过渡 */
 .modal-enter-active,
 .modal-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
 }
 
 .modal-enter-from,
@@ -1056,98 +930,89 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-.modal-enter-active .modal-content {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
+.modal-enter-active .modal-content,
 .modal-leave-active .modal-content {
-  transition: all 0.2s ease-in;
+  transition: transform 0.2s var(--hm-ease), opacity 0.2s ease;
 }
 
-.modal-enter-from .modal-content {
-  transform: scale(0.95) translateY(10px);
-  opacity: 0;
-}
-
+.modal-enter-from .modal-content,
 .modal-leave-to .modal-content {
-  transform: scale(0.95) translateY(10px);
+  transform: translateY(8px);
   opacity: 0;
 }
 
-/* 弹窗头部 */
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 32px;
-  border-bottom: 1px solid #F3F4F6;
-  background: #FFFFFF;
+  padding: var(--hm-space-4) var(--hm-space-6);
+  border-bottom: 1px solid var(--hm-line);
 }
 
 .modal-title-section {
   display: flex;
   align-items: center;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: var(--hm-space-3);
 }
 
 .modal-id {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #111827;
-  letter-spacing: 0.5px;
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-sm);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--hm-ink);
 }
 
 .modal-progress {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: #F9FAFB;
+  height: 22px;
+  padding: 0 var(--hm-space-2);
+  border-radius: var(--hm-radius-pill);
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
+  font-weight: 500;
+  background: var(--hm-surface-3);
 }
 
-.modal-progress.completed { color: #10B981; background: rgba(16, 185, 129, 0.1); }
-.modal-progress.in-progress { color: #F59E0B; background: rgba(245, 158, 11, 0.1); }
-.modal-progress.not-started { color: #9CA3AF; background: #F3F4F6; }
+.modal-progress.completed { color: var(--hm-success); background: var(--hm-success-soft); }
+.modal-progress.in-progress { color: var(--hm-signal-ink); background: var(--hm-signal-soft); }
+.modal-progress.not-started { color: var(--hm-ink-4); background: var(--hm-surface-3); }
 
 .modal-create-time {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: #9CA3AF;
-  letter-spacing: 0.3px;
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
+  color: var(--hm-ink-4);
 }
 
 .modal-close {
+  display: grid;
+  place-items: center;
   width: 32px;
   height: 32px;
   border: none;
+  border-radius: var(--hm-radius-sm);
   background: transparent;
-  font-size: 1.5rem;
-  color: #9CA3AF;
+  color: var(--hm-ink-4);
+  font-size: 20px;
+  line-height: 1;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  border-radius: 6px;
+  transition: background-color var(--hm-duration-fast) var(--hm-ease), color var(--hm-duration-fast) var(--hm-ease);
 }
 
 .modal-close:hover {
-  background: #F3F4F6;
-  color: #111827;
+  background: var(--hm-surface-3);
+  color: var(--hm-ink);
 }
 
-/* 弹窗内容 */
 .modal-body {
-  padding: 24px 32px;
+  padding: var(--hm-space-6);
 }
 
 .modal-section {
-  margin-bottom: 24px;
+  margin-bottom: var(--hm-space-6);
 }
 
 .modal-section:last-child {
@@ -1155,194 +1020,154 @@ onUnmounted(() => {
 }
 
 .modal-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: #6B7280;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 10px;
+  margin-bottom: var(--hm-space-2);
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
   font-weight: 500;
+  letter-spacing: var(--hm-tracking-label);
+  text-transform: uppercase;
+  color: var(--hm-ink-4);
 }
 
 .modal-requirement {
-  font-size: 0.95rem;
-  color: #374151;
+  padding: var(--hm-space-4);
+  background: var(--hm-surface-2);
+  border: 1px solid var(--hm-line);
+  border-radius: var(--hm-radius-md);
+  font-size: var(--hm-text-base);
   line-height: 1.6;
-  padding: 16px;
-  background: #F9FAFB;
-  border: 1px solid #F3F4F6;
-  border-radius: 8px;
+  color: var(--hm-ink-2);
 }
 
 .modal-files {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--hm-space-2);
   max-height: 200px;
   overflow-y: auto;
-  padding-right: 4px;
-}
-
-/* 自定义滚动条样式 */
-.modal-files::-webkit-scrollbar {
-  width: 4px;
-}
-
-.modal-files::-webkit-scrollbar-track {
-  background: #F3F4F6;
-  border-radius: 2px;
-}
-
-.modal-files::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
-  border-radius: 2px;
-}
-
-.modal-files::-webkit-scrollbar-thumb:hover {
-  background: #9CA3AF;
 }
 
 .modal-file-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.modal-file-item:hover {
-  border-color: #D1D5DB;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-2) var(--hm-space-3);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-line);
+  border-radius: var(--hm-radius-md);
 }
 
 .modal-file-name {
-  font-size: 0.85rem;
-  color: #4B5563;
   flex: 1;
   overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: var(--hm-text-sm);
+  color: var(--hm-ink-2);
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .modal-empty {
-  font-size: 0.85rem;
-  color: #9CA3AF;
-  padding: 16px;
-  background: #F9FAFB;
-  border: 1px dashed #E5E7EB;
-  border-radius: 6px;
+  padding: var(--hm-space-4);
+  background: var(--hm-surface-2);
+  border: 1px dashed var(--hm-line-strong);
+  border-radius: var(--hm-radius-md);
+  font-size: var(--hm-text-sm);
+  color: var(--hm-ink-4);
   text-align: center;
 }
 
-/* 推演回放分割线 */
 .modal-divider {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 32px 0;
-  background: #FFFFFF;
+  gap: var(--hm-space-4);
+  padding: 0 var(--hm-space-6);
 }
 
 .divider-line {
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, transparent, #E5E7EB, transparent);
+  background: var(--hm-line);
 }
 
 .divider-text {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  color: #9CA3AF;
-  letter-spacing: 2px;
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
+  letter-spacing: var(--hm-tracking-label);
   text-transform: uppercase;
+  color: var(--hm-ink-4);
   white-space: nowrap;
 }
 
-/* 导航按钮 */
 .modal-actions {
   display: flex;
-  gap: 16px;
-  padding: 20px 32px;
-  background: #FFFFFF;
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-5) var(--hm-space-6);
 }
 
 .modal-btn {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 16px;
-  border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  background: #FFFFFF;
+  gap: 6px;
+  padding: var(--hm-space-4) var(--hm-space-3);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-line);
+  border-radius: var(--hm-radius-md);
   cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
+  transition: border-color var(--hm-duration-fast) var(--hm-ease), background-color var(--hm-duration-fast) var(--hm-ease);
 }
 
 .modal-btn:hover:not(:disabled) {
-  border-color: #000000;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: var(--hm-surface-2);
+  border-color: var(--hm-ink);
 }
 
 .modal-btn:disabled {
-  opacity: 0.5;
+  background: var(--hm-surface-2);
+  opacity: 0.45;
   cursor: not-allowed;
-  background: #F9FAFB;
 }
 
 .btn-step {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
-  font-weight: 500;
-  color: #9CA3AF;
-  letter-spacing: 0.5px;
+  font-family: var(--hm-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  color: var(--hm-ink-4);
 }
 
 .btn-icon {
-  font-size: 1.4rem;
+  font-size: 20px;
   line-height: 1;
-  transition: color 0.2s ease;
+  color: var(--hm-ink);
+}
+
+.modal-btn:hover:not(:disabled) .btn-icon {
+  color: var(--hm-signal);
 }
 
 .btn-text {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: #4B5563;
+  font-size: var(--hm-text-sm);
+  font-weight: 500;
+  color: var(--hm-ink-2);
 }
-
-.modal-btn.btn-project .btn-icon { color: #3B82F6; }
-.modal-btn.btn-simulation .btn-icon { color: #F59E0B; }
-.modal-btn.btn-report .btn-icon { color: #10B981; }
 
 .modal-btn:hover:not(:disabled) .btn-text {
-  color: #111827;
+  color: var(--hm-ink);
 }
 
-/* 不可回放提示 */
 .modal-playback-hint {
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 0 32px 20px;
-  background: #FFFFFF;
+  padding: 0 var(--hm-space-6) var(--hm-space-5);
 }
 
 .hint-text {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  color: #9CA3AF;
-  letter-spacing: 0.3px;
-  text-align: center;
+  font-size: var(--hm-text-xs);
   line-height: 1.5;
+  color: var(--hm-ink-4);
+  text-align: center;
 }
 </style>

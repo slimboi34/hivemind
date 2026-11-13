@@ -155,13 +155,13 @@ const tipStyle = computed(() => {
 
 <style scoped>
 .plot { position: relative; }
-svg { display: block; overflow: visible; font-family: Inter, system-ui, sans-serif; }
-.grid line { stroke: #eeeeec; }
+svg { display: block; overflow: visible; font-family: var(--hm-font-sans); }
+.grid line { stroke: var(--hm-line); }
 .grid text, .xaxis text { fill: #898781; font-size: 11px; font-variant-numeric: tabular-nums; }
 .axis-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
 .baseline { stroke: #c3c2b7; }
-.band { fill: #f4f4f2; }
+.band { fill: var(--hm-surface-3); }
 .hit { fill: transparent; cursor: crosshair; outline: none; }
 .tip { top: 8px; }
-.tip-row.total { border-top: 1px solid #eee; margin-top: 4px; padding-top: 4px; }
+.tip-row.total { border-top: 1px solid var(--hm-line); margin-top: 4px; padding-top: 4px; }
 </style>
