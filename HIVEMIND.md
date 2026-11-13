@@ -48,6 +48,14 @@ identical to upstream.
   - top influencers (engagement, reach, support share) and a per-agent drill-down
   - most-engaged posts and the action-type mix
   - updates every 5 s while a simulation is running; `?agent=Name` deep-links a selection
+- **Run dynamics & consensus PDF** (same Analytics page).
+  Backed by `GET /api/simulation/<id>/dynamics` and
+  `GET /api/simulation/<id>/consensus-report.pdf`
+  (`trace_reader.py`, `run_dynamics.py`, `consensus_report.py`):
+  - cascade trees from the sqlite `trace` table (branching, orphans, structural virality)
+  - run health card (blind activations, participation, feed concentration, horizon)
+  - engagement consensus plain-language verdict
+  - **Consensus PDF** download button for a full end-of-run breakdown
 
 ## Re-engineering candidates
 

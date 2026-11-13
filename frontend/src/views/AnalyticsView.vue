@@ -13,6 +13,9 @@
         <span class="hm-pill__dot"></span>{{ statusText }}
       </span>
       <button class="hm-btn hm-btn--secondary hm-btn--sm" :disabled="loading" @click="load">{{ $t('analytics.refresh') }}</button>
+      <a class="hm-btn hm-btn--secondary hm-btn--sm" :href="pdfUrl" target="_blank" rel="noopener">
+        {{ $t('analytics.downloadPdf') }}
+      </a>
       <button class="hm-btn hm-btn--secondary hm-btn--sm" @click="router.push({ name: 'SimulationRun', params: { simulationId } })">
         ← {{ $t('analytics.backToSimulation') }}
       </button>
@@ -23,6 +26,8 @@
       <p v-if="!data && loading" class="banner">{{ $t('analytics.loading') }}</p>
 
       <template v-if="data">
+        <HealthBadge v-if="dynamics?.health" :health="dynamics.health" />
+
         <section class="kpis">
           <div class="kpi">
             <span class="kpi-label">{{ $t('analytics.kpiActions') }}</span>
@@ -53,6 +58,15 @@
         </section>
 
         <p v-if="!t.actions" class="banner">{{ $t('analytics.empty') }}</p>
+
+        <BranchingPanel
+          v-if="dynamics"
+          :summary="dynamics.cascades?.summary"
+          :orphans="dynamics.orphans"
+          :consensus="dynamics.consensus"
+        />
+
+        <CascadeForest v-if="dynamics?.cascades?.top?.length" :cascades="dynamics.cascades.top" />
 
         <section class="grid-main">
           <InfluenceNetwork
@@ -89,7 +103,10 @@ import AgentDetail from '../components/analytics/AgentDetail.vue'
 import ActivityChart from '../components/analytics/ActivityChart.vue'
 import TopPosts from '../components/analytics/TopPosts.vue'
 import ActionMix from '../components/analytics/ActionMix.vue'
-import { getSimulationAnalytics } from '../api/simulation'
+import HealthBadge from '../components/analytics/HealthBadge.vue'
+import CascadeForest from '../components/analytics/CascadeForest.vue'
+import BranchingPanel from '../components/analytics/BranchingPanel.vue'
+import { getSimulationAnalytics, getSimulationDynamics, consensusReportPdfUrl } from '../api/simulation'
 import { fmt, pct } from '../components/analytics/palette'
 
 const props = defineProps({ simulationId: { type: String, required: true } })
@@ -99,6 +116,7 @@ const { t: tr } = useI18n()
 
 const POLL_MS = 5000
 const data = ref(null)
+const dynamics = ref(null)
 const loading = ref(false)
 const error = ref('')
 const selected = ref(typeof route.query.agent === 'string' ? route.query.agent : null)
@@ -108,6 +126,7 @@ watch(selected, (name) => {
 let timer = null
 
 const t = computed(() => data.value?.totals || {})
+const pdfUrl = computed(() => consensusReportPdfUrl(props.simulationId))
 const isLive = computed(() => ['running', 'starting', 'stopping'].includes(data.value?.run?.status))
 const maxRound = computed(() => Math.max(0, (data.value?.rounds?.length || 1) - 1))
 const roundsDone = computed(() => {
@@ -133,8 +152,12 @@ const statusClass = computed(() => (isLive.value ? 'live' : t.value.actions ? 'd
 const load = async () => {
   loading.value = true
   try {
-    const res = await getSimulationAnalytics(props.simulationId)
-    data.value = res.data
+    const [analyticsRes, dynamicsRes] = await Promise.all([
+      getSimulationAnalytics(props.simulationId),
+      getSimulationDynamics(props.simulationId).catch(() => null)
+    ])
+    data.value = analyticsRes.data
+    dynamics.value = dynamicsRes?.data || null
     error.value = ''
   } catch (e) {
     error.value = e.message || String(e)

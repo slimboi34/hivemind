@@ -2178,6 +2178,54 @@ def get_simulation_analytics(simulation_id: str):
         }), 500
 
 
+@simulation_bp.route('/<simulation_id>/dynamics', methods=['GET'])
+def get_simulation_dynamics(simulation_id: str):
+    """
+    Hivemind run dynamics: health card, cascade trees (branching / orphans),
+    and engagement consensus. Read-only over sqlite traces + action logs.
+    """
+    try:
+        from ..services.run_dynamics import build_dynamics
+
+        data = build_dynamics(simulation_id)
+        return jsonify({"success": True, "data": data})
+    except Exception as e:
+        logger.error(f"Failed to build dynamics: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
+@simulation_bp.route('/<simulation_id>/consensus-report.pdf', methods=['GET'])
+def download_consensus_report_pdf(simulation_id: str):
+    """
+    Deterministic PDF: health, branching, orphans, top cascades and
+    engagement consensus for this run. Optional excerpt of the prediction
+    report when one exists on disk.
+    """
+    try:
+        from flask import send_file
+        from ..services.consensus_report import build_consensus_pdf
+        import io
+
+        pdf_bytes = build_consensus_pdf(simulation_id)
+        return send_file(
+            io.BytesIO(pdf_bytes),
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=f"{simulation_id}-consensus.pdf",
+        )
+    except Exception as e:
+        logger.error(f"Failed to build consensus PDF: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
 # ============== 数据库查询接口 ==============
 
 @simulation_bp.route('/<simulation_id>/posts', methods=['GET'])

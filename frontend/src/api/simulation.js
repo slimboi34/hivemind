@@ -163,6 +163,23 @@ export const getSimulationAnalytics = (simulationId) => {
 }
 
 /**
+ * Run dynamics: health card, cascade trees (branching / orphans), engagement consensus
+ * @param {string} simulationId
+ */
+export const getSimulationDynamics = (simulationId) => {
+  return service.get(`/api/simulation/${simulationId}/dynamics`)
+}
+
+/**
+ * Absolute URL for the consensus PDF download (browser navigation / <a download>)
+ * @param {string} simulationId
+ */
+export const consensusReportPdfUrl = (simulationId) => {
+  const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001').replace(/\/$/, '')
+  return `${base}/api/simulation/${simulationId}/consensus-report.pdf`
+}
+
+/**
  * 关闭模拟环境（优雅退出）
  * @param {Object} data - { simulation_id, timeout? }
  */
