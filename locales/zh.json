@@ -663,5 +663,38 @@
     "llmSelectAgentFailed": "LLM选择Agent失败，使用默认选择: {error}",
     "generateInterviewQuestionsFailed": "生成采访问题失败: {error}",
     "generateInterviewSummaryFailed": "生成采访摘要失败: {error}"
+  },
+  "godseye": {
+    "title": "来自 God's Eye View 的实时态势",
+    "hint": "获取某地的实时简报（新闻标题、灾害、天气、空中与海上交通），并作为种子文档加入上传列表。",
+    "placeholder": "地名或坐标，例如 Taipei 或 25.03, 121.56",
+    "preview": "预览简报",
+    "fetching": "获取中...",
+    "addToUploads": "加入上传列表",
+    "discard": "放弃",
+    "added": "已将 {name} 加入上传列表",
+    "checking": "正在检查 God's Eye View...",
+    "connected": "已连接 God's Eye View {version}",
+    "checkAgain": "重新检查",
+    "notRunningTitle": "God's Eye View 未运行",
+    "notRunningHelp": "请在 gods-eye-view 目录中运行 npm run dev 启动它，然后重新检查。Hivemind 会在 {url} 查找它（可通过 GODSEYE_URL 修改）。",
+    "noData": "以下部分无数据：{sections}",
+    "scopeNote": "仅使用汇总态势信息：不包含摄像头，也不追踪单个飞机或船只。",
+    "termsNote": "各数据源保留各自的条款，列于简报末尾。Google News 标题仅限个人、非商业用途。",
+    "sections": {
+      "headlines": "新闻标题",
+      "hazards": "灾害",
+      "weather": "天气",
+      "air": "空中交通",
+      "sea": "海上交通"
+    },
+    "errors": {
+      "unreachable": "God's Eye View 未在 {url} 运行。请在 gods-eye-view 目录中运行 npm run dev 启动它（或设置 GODSEYE_URL），然后重试。",
+      "timeout": "{url} 上的 God's Eye View 响应超时，请稍后重试。",
+      "areaRequired": "请输入地名或坐标。",
+      "areaNotFound": "找不到“{area}”。请尝试主要城市或国家名称，或输入坐标，例如 25.03, 121.56。",
+      "invalidRequest": "请求无效：{details}",
+      "failed": "God's Eye View 无法生成简报：{details}"
+    }
   }
 }

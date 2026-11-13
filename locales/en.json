@@ -663,5 +663,38 @@
     "llmSelectAgentFailed": "LLM agent selection failed, using default selection: {error}",
     "generateInterviewQuestionsFailed": "Failed to generate interview questions: {error}",
     "generateInterviewSummaryFailed": "Failed to generate interview summary: {error}"
+  },
+  "godseye": {
+    "title": "Live situation from God's Eye View",
+    "hint": "Fetch a live brief for a place (headlines, hazards, weather, air and sea traffic) and add it as a seed document.",
+    "placeholder": "Place or coordinates, e.g. Taipei or 25.03, 121.56",
+    "preview": "Preview brief",
+    "fetching": "Fetching...",
+    "addToUploads": "Add to uploads",
+    "discard": "Discard",
+    "added": "Added {name} to the upload list",
+    "checking": "Checking God's Eye View...",
+    "connected": "Connected to God's Eye View {version}",
+    "checkAgain": "Check again",
+    "notRunningTitle": "God's Eye View isn't running",
+    "notRunningHelp": "Start it in your gods-eye-view folder with npm run dev, then check again. Hivemind looks for it at {url} (set GODSEYE_URL to change this).",
+    "noData": "No data for: {sections}",
+    "scopeNote": "Aggregate context only: cameras and tracking of individual aircraft or ships are excluded.",
+    "termsNote": "Each source keeps its own terms, listed at the end of the brief. Google News headlines are for personal, non-commercial use only.",
+    "sections": {
+      "headlines": "Headlines",
+      "hazards": "Hazards",
+      "weather": "Weather",
+      "air": "Air traffic",
+      "sea": "Sea traffic"
+    },
+    "errors": {
+      "unreachable": "God's Eye View is not running at {url}. Start it with npm run dev in your gods-eye-view folder (or set GODSEYE_URL), then try again.",
+      "timeout": "God's Eye View at {url} took too long to answer. Try again in a moment.",
+      "areaRequired": "Enter a place name or coordinates.",
+      "areaNotFound": "Could not find \"{area}\". Try a major city or a country, or enter coordinates such as 25.03, 121.56.",
+      "invalidRequest": "Invalid request: {details}",
+      "failed": "God's Eye View could not build the brief: {details}"
+    }
   }
 }

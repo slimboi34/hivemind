@@ -165,6 +165,7 @@
                   </div>
                 </div>
               </div>
+              <GodsEyeImport @add-file="file => addFiles([file])" />
             </div>
 
             <!-- 分割线 -->
@@ -216,6 +217,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
+import GodsEyeImport from '../components/GodsEyeImport.vue'
 
 const router = useRouter()
 
