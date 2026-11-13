@@ -282,7 +282,10 @@
     "errorOccurred": "Sorry, an error occurred: {error}",
     "noResponse": "No response",
     "requestFailed": "Request failed",
-    "selectAgentFirst": "Please select a simulated individual first"
+    "selectAgentFirst": "Please select a simulated individual first",
+    "historyAsker": "Interviewer",
+    "historyYou": "You",
+    "historyPrompt": "Here is our conversation so far:\n{history}\n\nMy new question is: {message}"
   },
   "graph": {
     "panelTitle": "Graph Relationship Visualization",
