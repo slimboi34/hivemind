@@ -529,6 +529,8 @@ const fetchRunStatus = async () => {
       // 检测模拟是否已完成（通过 runner_status 或平台完成状态判断）
       const isCompleted = data.runner_status === 'completed' || data.runner_status === 'stopped'
       const isFailed = data.runner_status === 'failed'
+      // Hivemind: all rounds done and memory written; agents stay up for interviews
+      const readyEnvAlive = data.runner_status === 'running' && data.ready_for_report
       
       // runner_status is authoritative because the backend only publishes a
       // terminal state after the Zep ingestion barrier has completed.
@@ -537,8 +539,8 @@ const fetchRunStatus = async () => {
         phase.value = 2
         stopPolling()
         emit('update-status', 'error')
-      } else if (isCompleted) {
-        addLog(t('log.simCompleted'))
+      } else if (isCompleted || readyEnvAlive) {
+        addLog(readyEnvAlive ? t('log.roundsDoneEnvAlive') : t('log.simCompleted'))
         phase.value = 2
         stopPolling()
         emit('update-status', 'completed')
@@ -712,7 +714,7 @@ const resumeExistingRun = async () => {
     const status = res?.data?.runner_status
     if (!status || status === 'idle') return false
     runStatus.value = res.data
-    phase.value = ['completed', 'stopped', 'failed'].includes(status) ? 2 : 1
+    phase.value = (['completed', 'stopped', 'failed'].includes(status) || res.data.ready_for_report) ? 2 : 1
     addLog(t('log.resumeExistingRun', { status }))
     startStatusPolling()
     startDetailPolling()

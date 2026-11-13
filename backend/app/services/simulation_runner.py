@@ -133,6 +133,9 @@ class SimulationRunState:
     # 平台完成状态（通过检测 actions.jsonl 中的 simulation_end 事件）
     twitter_completed: bool = False
     reddit_completed: bool = False
+    # Hivemind: every round has finished and graph memory has drained, while the
+    # process stays alive for interviews. Reports may start in this state.
+    ready_for_report: bool = False
     
     # 每轮摘要
     rounds: List[RoundSummary] = field(default_factory=list)
@@ -183,6 +186,7 @@ class SimulationRunState:
             "reddit_running": self.reddit_running,
             "twitter_completed": self.twitter_completed,
             "reddit_completed": self.reddit_completed,
+            "ready_for_report": self.ready_for_report,
             "twitter_actions_count": self.twitter_actions_count,
             "reddit_actions_count": self.reddit_actions_count,
             "total_actions_count": self.twitter_actions_count + self.reddit_actions_count,
@@ -324,6 +328,7 @@ class SimulationRunner:
                 reddit_running=data.get("reddit_running", False),
                 twitter_completed=data.get("twitter_completed", False),
                 reddit_completed=data.get("reddit_completed", False),
+                ready_for_report=data.get("ready_for_report", False),
                 twitter_actions_count=data.get("twitter_actions_count", 0),
                 reddit_actions_count=data.get("reddit_actions_count", 0),
                 started_at=data.get("started_at"),
@@ -826,6 +831,11 @@ class SimulationRunner:
                                             f"所有平台已结束，等待进程与图谱写入完成: "
                                             f"{state.simulation_id}"
                                         )
+                                        # Hivemind: the process now waits for
+                                        # interview commands and may never exit
+                                        # on its own. Drain graph memory now so
+                                        # the report (with live interviews) can run.
+                                        cls._finish_rounds_keep_env(state)
                                 
                                 # 更新轮次信息（从 round_end 事件）
                                 elif event_type == "round_end":
@@ -878,6 +888,27 @@ class SimulationRunner:
             logger.warning(f"读取动作日志失败: {log_path}, error={e}")
             return position
     
+    @classmethod
+    def _finish_rounds_keep_env(cls, state: SimulationRunState) -> None:
+        """
+        Hivemind: all rounds have ended but the environment stays alive for
+        interviews. Drain Zep graph-memory ingestion now (all actions were
+        queued before simulation_end was read) and mark the run ready for a
+        report. On failure the updater stays registered, so the report barrier
+        keeps blocking and normal finalization retries and marks FAILED.
+        """
+        simulation_id = state.simulation_id
+        if cls._graph_memory_enabled.get(simulation_id, False):
+            try:
+                ZepGraphMemoryManager.stop_updater(simulation_id)
+                cls._graph_memory_enabled.pop(simulation_id, None)
+                logger.info("Graph memory drained after the final round: %s", simulation_id)
+            except Exception as error:
+                logger.error(f"Early graph memory drain failed, will retry at exit: {error}")
+                return
+        state.ready_for_report = True
+        cls._save_run_state(state)
+
     @classmethod
     def _check_all_platforms_completed(cls, state: SimulationRunState) -> bool:
         """

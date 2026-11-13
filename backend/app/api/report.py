@@ -98,7 +98,10 @@ def generate_report():
         rounds_finished_env_alive = bool(
             run_state is not None
             and run_state.runner_status == RunnerStatus.RUNNING
-            and SimulationRunner._check_all_platforms_completed(run_state)
+            and (
+                getattr(run_state, "ready_for_report", False)
+                or SimulationRunner._check_all_platforms_completed(run_state)
+            )
         )
         if updater is not None or (
             run_state is not None

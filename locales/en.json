@@ -528,6 +528,7 @@
     "loadConfigFailed": "Failed to load config: {error}",
     "step2Init": "Step 2 environment setup initialized",
     "step3Init": "Step 3 simulation run initialized",
+    "roundsDoneEnvAlive": "All rounds finished. Agents stay available for interviews; you can generate the report now",
     "resumeExistingRun": "Reattached to the existing run ({status}); it was not restarted",
     "startingDualSim": "Starting dual-platform parallel simulation...",
     "setMaxRounds": "Max simulation rounds set to: {rounds}",
