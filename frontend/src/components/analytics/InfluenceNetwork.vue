@@ -382,43 +382,44 @@ onUnmounted(() => { stop(); ro && ro.disconnect() })
 </script>
 
 <style scoped>
-.stage { position: relative; border: 1px solid #f0f0ee; border-radius: 6px; background: #fff; overflow: hidden; }
-svg { display: block; cursor: grab; font-family: Inter, system-ui, sans-serif; }
+.stage { position: relative; border: 1px solid var(--hm-line); border-radius: var(--hm-radius-md); background: var(--hm-surface); overflow: hidden; }
+svg { display: block; cursor: grab; font-family: var(--hm-font-sans); }
 svg:active { cursor: grabbing; }
-.nodes circle { stroke: #fff; stroke-width: 2px; cursor: pointer; transition: r 0.35s ease, fill 0.35s ease, fill-opacity 0.2s; }
-.nodes circle.selected { stroke: #0b0b0b; stroke-width: 3px; }
+.nodes circle { stroke: var(--hm-surface); stroke-width: 2px; cursor: pointer; transition: r 0.35s ease, fill 0.35s ease, fill-opacity 0.2s; }
+.nodes circle.selected { stroke: var(--hm-ink); stroke-width: 3px; }
 .nodes circle.ghost { pointer-events: none; }
 .edges path { transition: stroke-opacity 0.2s; pointer-events: none; }
 .edge-hit { fill: none; stroke: transparent; stroke-width: 10px; cursor: help; }
 .labels text {
   font-size: 11px; fill: #52514e; pointer-events: none;
-  paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round;
+  paint-order: stroke; stroke: var(--hm-surface); stroke-width: 3px; stroke-linejoin: round;
 }
-.labels text.strong { fill: #0b0b0b; font-weight: 600; }
+.labels text.strong { fill: var(--hm-ink); font-weight: 600; }
 .stage-empty {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  color: #898781; font-size: 13px; padding: 40px; text-align: center; pointer-events: none;
+  color: var(--hm-ink-4); font-size: 13px; padding: 40px; text-align: center; pointer-events: none;
 }
 .net-controls { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
 .net-controls .legend { margin: 0; }
 .kind-toggle {
-  display: inline-flex; align-items: center; gap: 6px; background: none; border: 1px solid #e6e6e3;
-  border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px; color: #0b0b0b; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; background: var(--hm-surface); border: 1px solid var(--hm-line-strong);
+  border-radius: 999px; height: 26px; padding: 0 10px; font: inherit; font-size: 12px; color: var(--hm-ink); cursor: pointer;
 }
-.kind-toggle.off { color: #b0afa8; border-style: solid; background: #fafaf9; }
+.kind-toggle.off { color: var(--hm-ink-5); border-style: solid; background: var(--hm-surface-2); }
 .kind-toggle.off .sw { opacity: 0.25; }
 .sw.line { width: 14px; height: 3px; border-radius: 2px; }
-.diverge-legend { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #52514e; }
+.diverge-legend { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--hm-ink-3); }
 .ramp {
   width: 90px; height: 8px; border-radius: 4px;
   background: linear-gradient(90deg, #eb6834, #b9b8b0, #2a78d6);
 }
 .replay { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
-.replay input[type=range] { flex: 1; accent-color: #0b0b0b; }
+.replay input[type=range] { flex: 1; accent-color: var(--hm-ink); }
 .play-btn {
-  min-width: 64px; padding: 6px 12px; border: none; border-radius: 4px; background: #0b0b0b; color: #fff;
-  font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer;
+  min-width: 72px; height: 30px; padding: 0 var(--hm-space-3); border: none; border-radius: var(--hm-radius-sm);
+  background: var(--hm-ink); color: var(--hm-surface); font-family: inherit; font-size: var(--hm-text-xs); font-weight: 600; cursor: pointer;
 }
-.play-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.replay-label { font-size: 12px; color: #52514e; font-variant-numeric: tabular-nums; min-width: 150px; text-align: right; }
+.play-btn:hover:not(:disabled) { background: var(--hm-ink-2); }
+.play-btn:disabled { background: var(--hm-surface-3); color: var(--hm-ink-5); cursor: not-allowed; }
+.replay-label { font-size: 12px; color: var(--hm-ink-3); font-variant-numeric: tabular-nums; min-width: 150px; text-align: right; }
 </style>

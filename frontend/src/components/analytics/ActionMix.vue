@@ -40,8 +40,8 @@ const usedCats = computed(() => CATEGORY_ORDER.filter(c => rows.value.some(r => 
 <style scoped>
 .mix { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .mix li { display: grid; grid-template-columns: 130px 1fr 48px; align-items: center; gap: 10px; }
-.label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #52514e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.label { font-family: var(--hm-font-mono); font-size: 11px; color: var(--hm-ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .track { height: 10px; display: block; }
 .fill { display: block; height: 100%; border-radius: 0 4px 4px 0; min-width: 2px; }
-.num { text-align: right; font-size: 12px; color: #0b0b0b; font-variant-numeric: tabular-nums; }
+.num { text-align: right; font-size: 12px; color: var(--hm-ink); font-variant-numeric: tabular-nums; }
 </style>

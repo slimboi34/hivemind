@@ -1,15 +1,18 @@
 <template>
   <div class="language-switcher" ref="switcherRef">
-    <button class="switcher-trigger" @click="toggleDropdown">
+    <button class="switcher-trigger" :aria-expanded="open" aria-haspopup="listbox" @click="toggleDropdown">
+      <svg class="globe" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M1.75 8h12.5M8 1.75c1.7 1.8 2.5 3.9 2.5 6.25S9.7 12.45 8 14.25M8 1.75C6.3 3.55 5.5 5.65 5.5 8s.8 4.45 2.5 6.25" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
       {{ currentLabel }}
-      <span class="caret">{{ open ? '▲' : '▼' }}</span>
+      <svg class="caret" :class="{ open }" viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path d="M2 3.75 5 6.75l3-3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-    <ul v-if="open" class="switcher-dropdown">
+    <ul v-if="open" class="switcher-dropdown" role="listbox">
       <li
         v-for="loc in availableLocales"
         :key="loc.key"
         class="switcher-option"
         :class="{ active: loc.key === locale }"
+        role="option"
+        :aria-selected="loc.key === locale"
         @click="switchLocale(loc.key)"
       >
         {{ loc.label }}
@@ -60,65 +63,96 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Lives in the Ink nav bar: mono, uppercase, letter-spaced. */
 .language-switcher {
   position: relative;
   display: inline-block;
-  font-family: 'JetBrains Mono', monospace;
 }
 
-/* Light theme (default - for white header backgrounds) */
 .switcher-trigger {
-  background: transparent;
-  color: #333;
-  border: 1px solid #CCC;
-  padding: 4px 12px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
-  cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: border-color 0.2s, opacity 0.2s;
+  height: 30px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--hm-nav-text);
+  border: 1px solid var(--hm-console-line);
+  border-radius: var(--hm-radius-sm);
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color var(--hm-duration-fast) var(--hm-ease), color var(--hm-duration-fast) var(--hm-ease);
 }
 
 .switcher-trigger:hover {
-  border-color: #999;
+  border-color: #4A4438;
+  color: var(--hm-paper);
+}
+
+.switcher-trigger:focus-visible {
+  outline-color: var(--hm-on-ink);
+}
+
+.globe,
+.caret {
+  color: currentColor;
+  opacity: 0.8;
 }
 
 .caret {
-  font-size: 0.6rem;
+  transition: transform var(--hm-duration-fast) var(--hm-ease);
+}
+
+.caret.open {
+  transform: rotate(180deg);
 }
 
 .switcher-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 8px);
   right: 0;
-  margin-top: 4px;
-  background: #FFFFFF;
-  border: 1px solid #DDD;
-  list-style: none;
-  padding: 4px 0;
   min-width: 100%;
+  padding: 4px;
+  list-style: none;
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-line);
+  border-radius: var(--hm-radius-md);
+  box-shadow: var(--hm-shadow-md);
   z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .switcher-option {
-  padding: 6px 12px;
-  font-size: 0.8rem;
-  color: #333;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--hm-radius-xs);
+  font-size: var(--hm-text-sm);
+  color: var(--hm-ink-2);
   white-space: nowrap;
-  transition: background 0.15s;
+  cursor: pointer;
+  transition: background-color var(--hm-duration-fast) var(--hm-ease);
 }
 
 .switcher-option:hover {
-  background: #F0F0F0;
+  background: var(--hm-surface-3);
 }
 
 .switcher-option.active {
-  color: var(--orange, #FF4500);
+  color: var(--hm-ink);
+  font-weight: 600;
 }
 
-
+.switcher-option.active::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--hm-signal);
+}
 </style>

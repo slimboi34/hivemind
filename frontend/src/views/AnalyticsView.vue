@@ -1,22 +1,22 @@
 <template>
   <div class="hm-analytics">
-    <header class="app-header">
-      <div class="header-left">
-        <div class="brand" @click="router.push('/')">MIROFISH</div>
-        <span class="divider"></span>
+    <AppHeader>
+      <template #context>
         <span class="page-title">{{ $t('analytics.title') }}</span>
         <span class="sim-id">{{ simulationId }}</span>
-      </div>
-      <div class="header-right">
-        <span class="status" :class="statusClass"><span class="dot"></span>{{ statusText }}</span>
-        <span v-if="isLive" class="auto">{{ $t('analytics.autoRefresh') }}</span>
-        <button class="ghost-btn" :disabled="loading" @click="load">{{ $t('analytics.refresh') }}</button>
-        <button class="ghost-btn" @click="router.push({ name: 'SimulationRun', params: { simulationId } })">
-          ← {{ $t('analytics.backToSimulation') }}
-        </button>
-        <LanguageSwitcher />
-      </div>
-    </header>
+      </template>
+      <span v-if="isLive" class="auto">{{ $t('analytics.autoRefresh') }}</span>
+      <span
+        class="hm-pill"
+        :class="{ 'hm-pill--active': statusClass === 'live', 'hm-pill--success': statusClass === 'done' }"
+      >
+        <span class="hm-pill__dot"></span>{{ statusText }}
+      </span>
+      <button class="hm-btn hm-btn--secondary hm-btn--sm" :disabled="loading" @click="load">{{ $t('analytics.refresh') }}</button>
+      <button class="hm-btn hm-btn--secondary hm-btn--sm" @click="router.push({ name: 'SimulationRun', params: { simulationId } })">
+        ← {{ $t('analytics.backToSimulation') }}
+      </button>
+    </AppHeader>
 
     <main class="page">
       <p v-if="error" class="banner error">{{ $t('analytics.loadFailed', { error }) }}</p>
@@ -82,7 +82,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import LanguageSwitcher from '../components/LanguageSwitcher.vue'
+import AppHeader from '../components/AppHeader.vue'
 import InfluenceNetwork from '../components/analytics/InfluenceNetwork.vue'
 import InfluencerBars from '../components/analytics/InfluencerBars.vue'
 import AgentDetail from '../components/analytics/AgentDetail.vue'
@@ -154,33 +154,21 @@ onUnmounted(() => clearTimeout(timer))
 </script>
 
 <style scoped>
-.hm-analytics { min-height: 100vh; background: #fafaf9; color: #0b0b0b; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; }
-.app-header {
-  height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
-  background: #fff; border-bottom: 1px solid #eaeaea; position: sticky; top: 0; z-index: 50;
-}
-.header-left, .header-right { display: flex; align-items: center; gap: 14px; }
-.brand { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 18px; letter-spacing: 1px; cursor: pointer; }
-.divider { width: 1px; height: 18px; background: #e0e0e0; }
-.page-title { font-weight: 600; font-size: 14px; }
-.sim-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #898781; }
-.status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #52514e; }
-.status .dot { width: 8px; height: 8px; border-radius: 50%; background: #c3c2b7; }
-.status.live .dot { background: #0ca30c; animation: pulse 1.4s ease-in-out infinite; }
-.status.done .dot { background: #0b0b0b; }
-.auto { font-size: 11px; color: #898781; }
-@keyframes pulse { 50% { opacity: 0.35; } }
+.hm-analytics { min-height: 100vh; background: var(--hm-paper); color: var(--hm-ink); font-family: var(--hm-font-sans); }
+.page-title { font-family: var(--hm-font-mono); font-size: var(--hm-text-2xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--hm-paper); }
+.sim-id { font-family: var(--hm-font-mono); font-size: var(--hm-text-2xs); color: var(--hm-nav-text); }
+.auto { font-family: var(--hm-font-mono); font-size: var(--hm-text-2xs); color: var(--hm-nav-text); }
 
-.page { max-width: 1440px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
-.banner { margin: 0; padding: 12px 16px; background: #fff; border: 1px solid #eaeaea; border-radius: 8px; font-size: 13px; color: #52514e; }
-.banner.error { border-color: #d03b3b; color: #d03b3b; }
+.page { max-width: 1440px; margin: 0 auto; padding: var(--hm-space-6); display: flex; flex-direction: column; gap: var(--hm-space-5); }
+.banner { margin: 0; padding: var(--hm-space-3) var(--hm-space-4); background: var(--hm-surface); border: 1px solid var(--hm-line); border-radius: var(--hm-radius-md); font-size: var(--hm-text-sm); color: var(--hm-ink-3); }
+.banner.error { background: var(--hm-danger-soft); border-color: transparent; color: var(--hm-danger); }
 
-.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
-.kpi { background: #fff; border: 1px solid #eaeaea; border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
-.kpi-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #898781; }
-.kpi-value { font-size: 26px; font-weight: 600; line-height: 1.1; }
-.kpi-value small { font-size: 14px; font-weight: 500; color: #898781; }
-.kpi-foot { font-size: 11px; color: #52514e; }
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--hm-space-3); }
+.kpi { background: var(--hm-surface); border: 1px solid var(--hm-line); border-radius: var(--hm-radius-lg); padding: var(--hm-space-4) var(--hm-space-5); display: flex; flex-direction: column; gap: 6px; }
+.kpi-label { font-size: var(--hm-text-2xs); font-weight: 500; font-family: var(--hm-font-mono); letter-spacing: var(--hm-tracking-label); text-transform: uppercase; color: var(--hm-ink-4); }
+.kpi-value { font-family: var(--hm-font-display); font-size: var(--hm-text-2xl); font-weight: 500; letter-spacing: var(--hm-tracking-display); line-height: 1.05; font-variant-numeric: tabular-nums; }
+.kpi-value small { font-size: var(--hm-text-base); font-weight: 500; letter-spacing: 0; color: var(--hm-ink-4); }
+.kpi-foot { font-size: var(--hm-text-2xs); color: var(--hm-ink-3); }
 
 .grid-main { display: grid; grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr); gap: 20px; align-items: start; }
 .side { display: flex; flex-direction: column; gap: 20px; }
@@ -194,36 +182,37 @@ onUnmounted(() => clearTimeout(timer))
 
 <!-- Shared, unscoped card styles for the analytics components; namespaced under .hm-analytics. -->
 <style>
-.hm-analytics .card { background: #fff; border: 1px solid #eaeaea; border-radius: 8px; padding: 18px 20px; }
+.hm-analytics .card { background: var(--hm-surface); border: 1px solid var(--hm-line); border-radius: var(--hm-radius-lg); padding: var(--hm-space-5) var(--hm-space-6); }
 .hm-analytics .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-.hm-analytics .card-head h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-.hm-analytics .card-head .sub { margin: 3px 0 0; font-size: 12px; color: #52514e; }
-.hm-analytics .legend { list-style: none; display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 10px; padding: 0; font-size: 12px; color: #0b0b0b; }
+.hm-analytics .card-head h3 { margin: 0; font-family: var(--hm-font-display); font-size: var(--hm-text-md); font-weight: 500; letter-spacing: -0.01em; }
+.hm-analytics .card-head .sub { margin: 4px 0 0; font-size: var(--hm-text-xs); color: var(--hm-ink-4); }
+.hm-analytics .legend { list-style: none; display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 10px; padding: 0; font-size: 12px; color: var(--hm-ink); }
 .hm-analytics .legend li { display: inline-flex; align-items: center; gap: 6px; }
 .hm-analytics .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; vertical-align: middle; }
 .hm-analytics .ghost-btn {
-  background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 5px 10px; font-size: 12px;
-  color: #0b0b0b; cursor: pointer; white-space: nowrap; font-family: inherit;
+  height: 28px; padding: 0 var(--hm-space-3); background: var(--hm-surface); border: 1px solid var(--hm-line-strong);
+  border-radius: var(--hm-radius-sm); font-size: var(--hm-text-xs); font-weight: 600; color: var(--hm-ink);
+  cursor: pointer; white-space: nowrap; font-family: inherit;
 }
-.hm-analytics .ghost-btn:hover:not(:disabled) { border-color: #999; }
+.hm-analytics .ghost-btn:hover:not(:disabled) { border-color: var(--hm-ink-5); background: var(--hm-surface-2); }
 .hm-analytics .ghost-btn:disabled { opacity: 0.4; cursor: default; }
-.hm-analytics .seg-toggle { display: inline-flex; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
-.hm-analytics .card-head .seg-toggle button { background: #fff; border: none; padding: 5px 10px; font-size: 12px; cursor: pointer; color: #52514e; font-family: inherit; }
-.hm-analytics .card-head .seg-toggle button.on { background: #0b0b0b; color: #fff; }
+.hm-analytics .seg-toggle { display: inline-flex; gap: 2px; padding: 3px; background: var(--hm-surface-3); border-radius: var(--hm-radius-md); }
+.hm-analytics .card-head .seg-toggle button { height: 26px; padding: 0 var(--hm-space-3); background: transparent; border: none; border-radius: var(--hm-radius-sm); font-size: var(--hm-text-xs); font-weight: 600; cursor: pointer; color: var(--hm-ink-3); font-family: inherit; }
+.hm-analytics .card-head .seg-toggle button.on { background: var(--hm-surface); color: var(--hm-ink); box-shadow: var(--hm-shadow-xs); }
 .hm-analytics .tip {
-  position: absolute; z-index: 20; pointer-events: none; min-width: 150px; background: #fff;
-  border: 1px solid rgba(11, 11, 11, 0.1); border-radius: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  padding: 8px 10px; font-size: 12px; color: #52514e;
+  position: absolute; z-index: 20; pointer-events: none; min-width: 150px; background: var(--hm-surface);
+  border: 1px solid var(--hm-line); border-radius: var(--hm-radius-md); box-shadow: var(--hm-shadow-md);
+  padding: 8px 10px; font-size: 12px; color: var(--hm-ink-3);
 }
-.hm-analytics .tip-title { font-weight: 600; color: #0b0b0b; margin-bottom: 4px; }
+.hm-analytics .tip-title { font-weight: 600; color: var(--hm-ink); margin-bottom: 4px; }
 .hm-analytics .tip-row { display: flex; align-items: center; gap: 6px; line-height: 1.7; }
-.hm-analytics .tip-row strong { color: #0b0b0b; font-variant-numeric: tabular-nums; min-width: 28px; text-align: right; }
-.hm-analytics .table-wrap { max-height: 320px; overflow: auto; border: 1px solid #f0f0ee; border-radius: 6px; }
+.hm-analytics .tip-row strong { color: var(--hm-ink); font-variant-numeric: tabular-nums; min-width: 28px; text-align: right; }
+.hm-analytics .table-wrap { max-height: 320px; overflow: auto; border: 1px solid var(--hm-line); border-radius: var(--hm-radius-md); }
 .hm-analytics .table-wrap table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .hm-analytics .table-wrap th {
-  position: sticky; top: 0; background: #fafaf9; text-align: right; font-weight: 500; color: #52514e;
-  padding: 6px 10px; border-bottom: 1px solid #eaeaea;
+  position: sticky; top: 0; background: var(--hm-surface-2); text-align: right; font-weight: 500; color: var(--hm-ink-3);
+  padding: 6px 10px; border-bottom: 1px solid var(--hm-line);
 }
-.hm-analytics .table-wrap td { text-align: right; padding: 5px 10px; border-bottom: 1px solid #f4f4f2; font-variant-numeric: tabular-nums; }
+.hm-analytics .table-wrap td { text-align: right; padding: 5px 10px; border-bottom: 1px solid var(--hm-surface-3); font-variant-numeric: tabular-nums; }
 .hm-analytics .table-wrap th:first-child, .hm-analytics .table-wrap td:first-child { text-align: left; }
 </style>

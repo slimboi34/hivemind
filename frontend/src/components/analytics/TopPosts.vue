@@ -49,16 +49,16 @@ const COUNTS = [
 .posts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .posts li { padding: 12px 0; border-bottom: 1px solid #f2f2f0; }
 .posts li:last-child { border-bottom: none; }
-.meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #898781; }
-.author { background: none; border: none; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: #0b0b0b; cursor: pointer; }
+.meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--hm-ink-4); }
+.author { background: none; border: none; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: var(--hm-ink); cursor: pointer; }
 .author:hover { text-decoration: underline; }
-.score { margin-left: auto; font-size: 13px; font-weight: 600; color: #0b0b0b; font-variant-numeric: tabular-nums; }
+.score { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--hm-ink); font-variant-numeric: tabular-nums; }
 .content {
-  margin: 6px 0 8px; font-size: 13px; line-height: 1.5; color: #222; cursor: pointer;
+  margin: 6px 0 8px; font-size: 13px; line-height: 1.5; color: var(--hm-ink); cursor: pointer;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap;
 }
 .content.open { -webkit-line-clamp: unset; display: block; }
-.counts { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: #52514e; font-variant-numeric: tabular-nums; }
+.counts { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--hm-ink-3); font-variant-numeric: tabular-nums; }
 .counts .sw { margin-right: 4px; }
-.hint { color: #898781; font-size: 13px; margin: 0; }
+.hint { color: var(--hm-ink-4); font-size: 13px; margin: 0; }
 </style>

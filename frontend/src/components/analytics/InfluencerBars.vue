@@ -61,17 +61,17 @@ const maxVal = computed(() => Math.max(1, ...top.value.map(a => a.engagement_rec
   border: 1px solid transparent;
 }
 .rank li:hover { background: #f7f7f5; }
-.rank li.on { border-color: #0b0b0b; background: #fafaf9; }
-.pos { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #898781; width: 18px; padding-top: 2px; }
+.rank li.on { border-color: var(--hm-ink); background: var(--hm-surface-2); }
+.pos { font-family: var(--hm-font-mono); font-size: 11px; color: var(--hm-ink-4); width: 18px; padding-top: 2px; }
 .body { flex: 1; min-width: 0; }
 .line1 { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
-.name { color: #0b0b0b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.val { color: #0b0b0b; font-weight: 600; font-variant-numeric: tabular-nums; }
+.name { color: var(--hm-ink); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.val { color: var(--hm-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .bar { display: flex; gap: 2px; height: 8px; margin: 5px 0 4px; min-width: 6px; }
 .seg { height: 100%; min-width: 2px; }
 .seg:last-child { border-radius: 0 4px 4px 0; }
-.line2 { display: flex; gap: 14px; font-size: 11px; color: #52514e; font-variant-numeric: tabular-nums; }
-.mini-tip { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; font-size: 11px; color: #52514e; }
-.mini-tip strong { color: #0b0b0b; }
+.line2 { display: flex; gap: 14px; font-size: 11px; color: var(--hm-ink-3); font-variant-numeric: tabular-nums; }
+.mini-tip { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; font-size: 11px; color: var(--hm-ink-3); }
+.mini-tip strong { color: var(--hm-ink); }
 .mini-tip .sw { margin-right: 4px; }
 </style>
