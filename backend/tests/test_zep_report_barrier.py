@@ -295,3 +295,57 @@ def test_report_reader_lease_blocks_graph_start_and_delete(monkeypatch):
     finally:
         if report_id:
             unregister_graph_reader("graph-1", report_id)
+
+
+@pytest.mark.parametrize(
+    "platforms_done,updater,expected_status",
+    [
+        (True, None, 404),        # barrier passes (then stops at the mocked missing project)
+        (False, None, 409),       # rounds still running
+        (True, object(), 409),    # Zep ingestion still pending
+    ],
+)
+def test_report_allowed_once_rounds_finish_with_env_alive(
+    monkeypatch, platforms_done, updater, expected_status
+):
+    simulation = SimpleNamespace(project_id="proj-1", graph_id="graph-1")
+    monkeypatch.setattr(
+        report_api,
+        "SimulationManager",
+        lambda: SimpleNamespace(get_simulation=lambda _simulation_id: simulation),
+    )
+    monkeypatch.setattr(
+        report_api.ReportManager,
+        "get_report_by_simulation",
+        classmethod(lambda _cls, _simulation_id: None),
+    )
+    monkeypatch.setattr(
+        report_api.SimulationRunner,
+        "get_run_state",
+        classmethod(lambda _cls, _simulation_id: SimpleNamespace(
+            simulation_id="sim-1", runner_status=RunnerStatus.RUNNING
+        )),
+    )
+    monkeypatch.setattr(
+        report_api.SimulationRunner,
+        "_check_all_platforms_completed",
+        classmethod(lambda _cls, _state: platforms_done),
+    )
+    monkeypatch.setattr(
+        report_api.ZepGraphMemoryManager,
+        "get_updater",
+        classmethod(lambda _cls, _simulation_id: updater),
+    )
+    monkeypatch.setattr(
+        report_api.ProjectManager,
+        "get_project",
+        classmethod(lambda _cls, _project_id: None),
+    )
+
+    app = Flask(__name__)
+    with app.test_request_context(
+        "/api/report/generate", method="POST", json={"simulation_id": "sim-1"}
+    ):
+        _payload, status = _json_result(report_api.generate_report())
+
+    assert status == expected_status

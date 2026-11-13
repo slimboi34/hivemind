@@ -1580,6 +1580,12 @@ def start_simulation():
                     "error": t('api.maxRoundsInvalid')
                 }), 400
 
+        # Hivemind: honour OASIS_DEFAULT_MAX_ROUNDS as the cap when the caller sets none.
+        # Upstream defined this setting but never applied it, so "auto" rounds could run
+        # e.g. 168 rounds (one simulated week). Set it to 0 to disable the cap.
+        if max_rounds is None and Config.OASIS_DEFAULT_MAX_ROUNDS > 0:
+            max_rounds = Config.OASIS_DEFAULT_MAX_ROUNDS
+
         if platform not in ['twitter', 'reddit', 'parallel']:
             return jsonify({
                 "success": False,

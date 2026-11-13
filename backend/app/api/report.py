@@ -89,8 +89,21 @@ def generate_report():
             RunnerStatus.PAUSED,
             RunnerStatus.STOPPING,
         }
+        # Hivemind: after its last round the simulation process stays alive in
+        # "wait for commands" mode so the ReportAgent's interview_agents tool can
+        # interview agents. Its status is still RUNNING, but every platform has
+        # logged simulation_end, so the action data is final. Without this, a
+        # report needs the environment closed first and silently loses its
+        # agent interviews. Pending Zep ingestion (updater) still blocks.
+        rounds_finished_env_alive = bool(
+            run_state is not None
+            and run_state.runner_status == RunnerStatus.RUNNING
+            and SimulationRunner._check_all_platforms_completed(run_state)
+        )
         if updater is not None or (
-            run_state is not None and run_state.runner_status in active_statuses
+            run_state is not None
+            and run_state.runner_status in active_statuses
+            and not rounds_finished_env_alive
         ):
             return jsonify({
                 "success": False,
@@ -106,7 +119,10 @@ def generate_report():
         }
         if (
             run_state is None
-            or run_state.runner_status not in successful_terminal_statuses
+            or (
+                run_state.runner_status not in successful_terminal_statuses
+                and not rounds_finished_env_alive
+            )
         ):
             return jsonify({
                 "success": False,
