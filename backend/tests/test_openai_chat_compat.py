@@ -5,6 +5,7 @@ import pytest
 from app.utils.openai_chat_compat import (
     create_chat_completion,
     extract_chat_completion_text,
+    is_claude5_family,
     is_gpt5_family,
 )
 
@@ -121,3 +122,63 @@ def test_extracts_text_from_supported_content_shapes():
 
     assert extract_chat_completion_text(response) == "first second third"
     assert extract_chat_completion_text(SimpleNamespace(choices=[])) == ""
+
+
+@pytest.mark.parametrize(
+    "model,expected",
+    [
+        ("claude-haiku-5-5", True),
+        ("claude-sonnet-5", True),
+        ("claude-fable-5-2", True),
+        ("us.anthropic.claude-opus-5-5-v1:0", True),
+        ("claude-haiku-4-5", False),
+        ("claude-3-5-sonnet-latest", False),
+        ("qwen-plus", False),
+        (None, False),
+    ],
+)
+def test_claude5_family_detection(model, expected):
+    assert is_claude5_family(model) is expected
+
+
+def test_claude5_omits_temperature_and_json_object_mode():
+    recorder = CompletionRecorder()
+    create_chat_completion(
+        client_for(recorder),
+        model="claude-haiku-5-5",
+        messages=[{"role": "user", "content": "hello"}],
+        temperature=0.3,
+        max_tokens=50,
+        response_format={"type": "json_object"},
+    )
+    assert recorder.calls == [{
+        "model": "claude-haiku-5-5",
+        "messages": [{"role": "user", "content": "hello"}],
+        "max_tokens": 50,
+    }]
+
+
+def test_claude5_keeps_json_schema_response_format():
+    recorder = CompletionRecorder()
+    schema = {"type": "json_schema", "json_schema": {"name": "x", "schema": {"type": "object"}}}
+    create_chat_completion(
+        client_for(recorder),
+        model="claude-sonnet-5-5",
+        messages=[],
+        response_format=schema,
+    )
+    assert recorder.calls[0]["response_format"] == schema
+
+
+def test_claude4_keeps_legacy_request_shape():
+    recorder = CompletionRecorder()
+    create_chat_completion(
+        client_for(recorder),
+        model="claude-haiku-4-5",
+        messages=[],
+        temperature=0.3,
+        max_tokens=10,
+        response_format={"type": "json_object"},
+    )
+    assert recorder.calls[0]["temperature"] == 0.3
+    assert recorder.calls[0]["response_format"] == {"type": "json_object"}

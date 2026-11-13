@@ -7,7 +7,11 @@ gracefully adapting request parameters for GPT-5 family models.
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Optional
+
+# Claude model ids, optionally with a provider prefix (e.g. "us.anthropic.claude-sonnet-5-5").
+_CLAUDE_ID = re.compile(r"(?:^|[./:])claude-(?:opus|sonnet|haiku|fable)-(\d+)")
 
 
 def is_gpt5_family(model: Optional[str]) -> bool:
@@ -15,6 +19,18 @@ def is_gpt5_family(model: Optional[str]) -> bool:
     if not model:
         return False
     return model.strip().lower().startswith("gpt-5")
+
+
+def is_claude5_family(model: Optional[str]) -> bool:
+    """
+    Return True for Claude 5 and later on Anthropic's OpenAI-compatible endpoint.
+
+    These models reject `temperature` ("deprecated for this model") and accept
+    only `json_schema` response formats, not `json_object`. Earlier Claude
+    models (e.g. claude-haiku-4-5) accept both and keep the legacy request shape.
+    """
+    match = _CLAUDE_ID.search((model or "").strip().lower())
+    return bool(match) and int(match.group(1)) >= 5
 
 
 def create_chat_completion(
@@ -32,7 +48,10 @@ def create_chat_completion(
     Compatibility strategy:
     - For GPT-5 family, avoid sending temperature by default.
     - For token limit, use `max_completion_tokens` on GPT-5, `max_tokens` otherwise.
-    - Preserve the legacy request shape for every non-GPT-5 model/provider.
+    - For Claude 5 family, avoid sending temperature, and omit `json_object`
+      response_format (the prompts already require JSON; this is the same request
+      the JSON-mode fallback sends to providers without JSON mode).
+    - Preserve the legacy request shape for every other model/provider.
     - Propagate provider errors unchanged instead of guessing from message text.
     """
     kwargs: Dict[str, Any] = {
@@ -40,12 +59,15 @@ def create_chat_completion(
         "messages": messages,
     }
 
-    if response_format is not None:
+    gpt5_family = is_gpt5_family(model)
+    claude5_family = is_claude5_family(model)
+
+    if response_format is not None and not (
+        claude5_family and response_format.get("type") == "json_object"
+    ):
         kwargs["response_format"] = response_format
 
-    gpt5_family = is_gpt5_family(model)
-
-    if temperature is not None and not gpt5_family:
+    if temperature is not None and not gpt5_family and not claude5_family:
         kwargs["temperature"] = temperature
 
     if max_tokens is not None:
