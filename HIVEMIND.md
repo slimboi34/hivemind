@@ -55,7 +55,18 @@ identical to upstream.
   - cascade trees from the sqlite `trace` table (branching, orphans, structural virality)
   - run health card (blind activations, participation, feed concentration, horizon)
   - engagement consensus plain-language verdict
-  - **Consensus PDF** download button for a full end-of-run breakdown
+  - **Report PDF** download button for a full end-of-run breakdown (starts with "What happened")
+- **What happened** (top of the Analytics page, first section of the Report PDF).
+  `GET/POST /api/simulation/<id>/recap` (`run_recap.py`): a plain-language story of each run.
+  - Facts are deterministic. Rounds are grouped into stretches (one per round for short runs,
+    four stretches for longer ones, one per simulated day for multi-day runs). Each stretch
+    records posts, replies, approving/disapproving reactions, new voices, the standout post
+    (quoted verbatim) and pushback.
+  - The LLM narrates only from those facts. A template writes the same shape with no LLM,
+    shown while a run is live or if the model call fails.
+  - Once a run finishes, opening Analytics writes the story automatically. It is cached in
+    `uploads/simulations/<id>/recap.json` and keyed to the action log, so it is written
+    once per run. "Rewrite" forces a new one.
 
 ## Re-engineering candidates
 

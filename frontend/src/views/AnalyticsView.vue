@@ -26,6 +26,14 @@
       <p v-if="!data && loading" class="banner">{{ $t('analytics.loading') }}</p>
 
       <template v-if="data">
+        <WhatHappened
+          :recap="recap"
+          :writing="writingRecap"
+          :write-error="recapError"
+          v-model:selected="selected"
+          @write="writeRecap"
+        />
+
         <HealthBadge v-if="dynamics?.health" :health="dynamics.health" />
 
         <section class="kpis">
@@ -106,7 +114,14 @@ import ActionMix from '../components/analytics/ActionMix.vue'
 import HealthBadge from '../components/analytics/HealthBadge.vue'
 import CascadeForest from '../components/analytics/CascadeForest.vue'
 import BranchingPanel from '../components/analytics/BranchingPanel.vue'
-import { getSimulationAnalytics, getSimulationDynamics, consensusReportPdfUrl } from '../api/simulation'
+import WhatHappened from '../components/analytics/WhatHappened.vue'
+import {
+  getSimulationAnalytics,
+  getSimulationDynamics,
+  getSimulationRecap,
+  writeSimulationRecap,
+  consensusReportPdfUrl
+} from '../api/simulation'
 import { fmt, pct } from '../components/analytics/palette'
 
 const props = defineProps({ simulationId: { type: String, required: true } })
@@ -117,6 +132,10 @@ const { t: tr } = useI18n()
 const POLL_MS = 5000
 const data = ref(null)
 const dynamics = ref(null)
+const recap = ref(null)
+const writingRecap = ref(false)
+const recapError = ref('')
+let autoWriteTried = false
 const loading = ref(false)
 const error = ref('')
 const selected = ref(typeof route.query.agent === 'string' ? route.query.agent : null)
@@ -152,19 +171,45 @@ const statusClass = computed(() => (isLive.value ? 'live' : t.value.actions ? 'd
 const load = async () => {
   loading.value = true
   try {
-    const [analyticsRes, dynamicsRes] = await Promise.all([
+    const [analyticsRes, dynamicsRes, recapRes] = await Promise.all([
       getSimulationAnalytics(props.simulationId),
-      getSimulationDynamics(props.simulationId).catch(() => null)
+      getSimulationDynamics(props.simulationId).catch(() => null),
+      writingRecap.value ? Promise.resolve(null) : getSimulationRecap(props.simulationId).catch(() => null)
     ])
     data.value = analyticsRes.data
     dynamics.value = dynamicsRes?.data || null
+    if (recapRes?.data) recap.value = recapRes.data
     error.value = ''
+    maybeAutoWrite()
   } catch (e) {
     error.value = e.message || String(e)
   } finally {
     loading.value = false
   }
   schedule()
+}
+
+// Once a run has finished, have the AI write its story the first time anyone opens it.
+// The backend caches it, so later visits get it instantly.
+const maybeAutoWrite = () => {
+  const r = recap.value
+  if (autoWriteTried || !r || r.story_source === 'llm' || !r.can_write || !r.facts?.run?.finished) return
+  autoWriteTried = true
+  writeRecap(false)
+}
+
+const writeRecap = async (force = false) => {
+  if (writingRecap.value) return
+  writingRecap.value = true
+  recapError.value = ''
+  try {
+    const res = await writeSimulationRecap(props.simulationId, force)
+    recap.value = res.data
+  } catch (e) {
+    recapError.value = e.message || String(e)
+  } finally {
+    writingRecap.value = false
+  }
 }
 
 const schedule = () => {

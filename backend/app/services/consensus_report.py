@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import io
 import os
+import unicodedata
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -30,8 +31,37 @@ AMBER = (0.75, 0.5, 0.05)
 RED = (0.75, 0.2, 0.15)
 
 
+PLATFORM_NAMES = {"twitter": "Info Plaza", "reddit": "Topic Community"}
+
+
 def _color(level: str) -> Tuple[float, float, float]:
     return {"green": GREEN, "amber": AMBER, "red": RED}.get(level, MUTED)
+
+
+# The base-14 Helvetica used here only encodes Latin-1, so typographic
+# punctuation would otherwise print as a stray glyph.
+_PUNCT = str.maketrans({
+    "\u2018": "'", "\u2019": "'", "\u201a": "'", "\u201b": "'",
+    "\u201c": '"', "\u201d": '"', "\u201e": '"', "\u201f": '"',
+    "\u2013": "-", "\u2014": "-", "\u2015": "-", "\u2212": "-",
+    "\u2026": "...", "\u2022": "\u00b7", "\u00a0": " ", "\u2009": " ", "\u202f": " ",
+})
+
+
+def _latin1(text: str) -> str:
+    out = []
+    for ch in (text or "").translate(_PUNCT):
+        if ord(ch) < 256:
+            out.append(ch)
+        elif unicodedata.category(ch).startswith("S"):
+            continue  # emoji and other symbols: drop rather than print "?"
+        else:
+            out.append("?")
+    return "".join(out)
+
+
+def _insert(page, point, text: str, **kwargs) -> None:
+    page.insert_text(point, _latin1(text), **kwargs)
 
 
 def _wrap(text: str, width: int = 92) -> List[str]:
@@ -67,7 +97,7 @@ class _Doc:
 
     def heading(self, text: str, size: float = 18) -> None:
         self._ensure(size + 16)
-        self.page.insert_text(
+        _insert(self.page, 
             (MARGIN, self.y + size),
             text,
             fontsize=size,
@@ -78,7 +108,7 @@ class _Doc:
 
     def subheading(self, text: str) -> None:
         self._ensure(28)
-        self.page.insert_text(
+        _insert(self.page, 
             (MARGIN, self.y + 12),
             text,
             fontsize=12,
@@ -90,7 +120,7 @@ class _Doc:
     def body(self, text: str, color=MUTED, size: float = 10) -> None:
         for line in _wrap(text, width=88):
             self._ensure(size + 6)
-            self.page.insert_text(
+            _insert(self.page, 
                 (MARGIN, self.y + size),
                 line,
                 fontsize=size,
@@ -103,7 +133,7 @@ class _Doc:
         for i, line in enumerate(_wrap(text, width=84)):
             self._ensure(14)
             prefix = "•  " if i == 0 else "   "
-            self.page.insert_text(
+            _insert(self.page, 
                 (MARGIN + 8, self.y + 10),
                 prefix + line,
                 fontsize=10,
@@ -111,6 +141,32 @@ class _Doc:
                 color=MUTED,
             )
             self.y += 14
+
+    def body_font(self, text: str, fontname: str, color=INK, size: float = 10, indent: float = 0,
+                  width: int = 88) -> None:
+        for line in _wrap(text, width=width):
+            self._ensure(size + 6)
+            _insert(self.page, 
+                (MARGIN + indent, self.y + size),
+                line,
+                fontsize=size,
+                fontname=fontname,
+                color=color,
+            )
+            self.y += size + 4
+
+    def quote(self, text: str, attribution: str) -> None:
+        self._ensure(30)
+        top = self.y
+        self.body_font(f"\u201c{text}\u201d", "heit", color=INK, size=9.5, indent=14, width=86)
+        self.body_font(attribution, "helv", color=MUTED, size=8.5, indent=14, width=90)
+        self.page.draw_line(
+            fitz.Point(MARGIN + 4, top + 2),
+            fitz.Point(MARGIN + 4, self.y - 2),
+            color=LINE,
+            width=2,
+        )
+        self.y += 4
 
     def rule(self) -> None:
         self._ensure(12)
@@ -127,7 +183,7 @@ class _Doc:
         c = _color(level)
         rect = fitz.Rect(MARGIN, self.y, MARGIN + 14, self.y + 14)
         self.page.draw_rect(rect, color=c, fill=c)
-        self.page.insert_text(
+        _insert(self.page, 
             (MARGIN + 22, self.y + 11),
             f"{label}  ({level.upper()})",
             fontsize=11,
@@ -138,14 +194,14 @@ class _Doc:
 
     def kv(self, key: str, value: str) -> None:
         self._ensure(14)
-        self.page.insert_text(
+        _insert(self.page, 
             (MARGIN, self.y + 10),
             key,
             fontsize=9,
             fontname="helv",
             color=MUTED,
         )
-        self.page.insert_text(
+        _insert(self.page, 
             (MARGIN + 160, self.y + 10),
             value,
             fontsize=10,
@@ -184,6 +240,66 @@ def _find_report_markdown(simulation_id: str, dynamics: Dict[str, Any]) -> Optio
     return None
 
 
+def _what_happened(d: "_Doc", recap: Dict[str, Any]) -> None:
+    """Section 1: the plain-language story of the run (see run_recap)."""
+    facts = recap.get("facts") or {}
+    story = recap.get("story") or {}
+    chapters = {c["index"]: c for c in facts.get("chapters") or []}
+
+    d.subheading("1. What happened")
+    d.body_font(story.get("headline") or "", "hebo", size=12, width=76)
+    d.y += 2
+    d.body(story.get("summary") or "", color=INK)
+    d.y += 4
+
+    if story.get("opening"):
+        d.body_font("How it started", "hebo", size=10)
+        d.body(story["opening"])
+        d.y += 4
+
+    for item in story.get("chapters") or []:
+        ch = chapters.get(item.get("index"))
+        if not ch:
+            continue
+        d.body_font(f"{ch['time']}  ·  {item.get('title') or ''}", "hebo", size=10)
+        d.body(item.get("story") or "")
+        tone = ch.get("tone")
+        d.body(
+            f"{ch.get('posts', 0)} posts · {ch.get('replies', 0)} replies · "
+            f"{ch.get('approving', 0) + ch.get('disapproving', 0)} reactions"
+            f" ({round(tone * 100)}% approving)" if tone is not None else
+            f"{ch.get('posts', 0)} posts · {ch.get('replies', 0)} replies · no reactions",
+            size=8.5,
+        )
+        standouts = ch.get("standout_posts") or []
+        if standouts:
+            sp = standouts[0]
+            d.quote(
+                sp["text"],
+                f"{sp['author']} on {PLATFORM_NAMES.get(sp['platform'], sp['platform'])} · "
+                f"{sp.get('reactions_in_chapter', 0)} reactions in this stretch",
+            )
+        d.y += 2
+
+    if story.get("ending"):
+        d.body_font("Where it ended up", "hebo", size=10)
+        d.body(story["ending"], color=INK)
+    for t in story.get("takeaways") or []:
+        d.bullet(t)
+    d.y += 2
+    source = (
+        "Story written by Hivemind's AI from this run's posts and reactions only."
+        if recap.get("story_source") == "llm"
+        else "Quick summary generated from this run's data. Open Analytics to have the full story written."
+    )
+    d.body(
+        source + " Quotes are real posts from the simulation. Approving share = likes, reposts, "
+        "quotes and follows versus dislikes and mutes: how warmly posts were received, not opinion "
+        "on the question.",
+        size=8.5,
+    )
+
+
 def build_consensus_pdf(simulation_id: str) -> bytes:
     dynamics = build_dynamics(simulation_id)
     health = dynamics["health"]
@@ -192,8 +308,16 @@ def build_consensus_pdf(simulation_id: str) -> bytes:
     consensus = dynamics["consensus"]
     run = dynamics["run"]
 
+    recap = None
+    try:
+        from .run_recap import get_recap
+
+        recap = get_recap(simulation_id, dynamics=dynamics)
+    except Exception:  # the story is optional; never block the PDF on it
+        recap = None
+
     d = _Doc()
-    d.heading("Hivemind consensus report")
+    d.heading("Hivemind run report")
     d.body(
         f"Simulation {simulation_id}  ·  generated "
         f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
@@ -205,7 +329,13 @@ def build_consensus_pdf(simulation_id: str) -> bytes:
     )
     d.rule()
 
-    d.subheading("1. Run health")
+    n = 1
+    if recap and (recap.get("facts") or {}).get("chapters"):
+        _what_happened(d, recap)
+        d.rule()
+        n = 2
+
+    d.subheading(f"{n}. Run health")
     d.badge(health["overall"], health["headline"])
     for reason in health.get("reasons") or []:
         d.bullet(reason)
@@ -217,7 +347,7 @@ def build_consensus_pdf(simulation_id: str) -> bytes:
         )
 
     d.rule()
-    d.subheading("2. Branching & orphans")
+    d.subheading(f"{n + 1}. Branching & orphans")
     bf = cascades.get("branching_factor")
     d.body(
         f"Branching factor: {bf if bf is not None else '–'} "
@@ -240,7 +370,7 @@ def build_consensus_pdf(simulation_id: str) -> bytes:
     )
 
     d.rule()
-    d.subheading("3. Top cascades")
+    d.subheading(f"{n + 2}. Top cascades")
     top = dynamics["cascades"].get("top") or []
     if not top:
         d.body("No cascades reconstructed yet (simulation DB missing or still seeding).")
@@ -256,7 +386,7 @@ def build_consensus_pdf(simulation_id: str) -> bytes:
             d.body(f"   “{snippet[:160]}{'…' if len(snippet) > 160 else ''}”")
 
     d.rule()
-    d.subheading("4. Engagement consensus")
+    d.subheading(f"{n + 3}. Engagement consensus")
     d.body(consensus.get("plain") or "", color=INK)
     d.kv("Verdict", str(consensus.get("verdict")))
     share = consensus.get("crowd_support_share")
@@ -278,7 +408,7 @@ def build_consensus_pdf(simulation_id: str) -> bytes:
             )
 
     d.rule()
-    d.subheading("5. How to read this")
+    d.subheading(f"{n + 4}. How to read this")
     d.bullet(
         "Branching factor < 1 means conversations die out; near 0 means almost pure broadcasting."
     )
@@ -297,7 +427,7 @@ def build_consensus_pdf(simulation_id: str) -> bytes:
     report_md = _find_report_markdown(simulation_id, dynamics)
     if report_md:
         d.rule()
-        d.subheading("6. Prediction report excerpt")
+        d.subheading(f"{n + 5}. Prediction report excerpt")
         # First ~40 non-empty lines of the markdown, stripped of headings markers lightly
         lines = [ln.strip() for ln in report_md.splitlines() if ln.strip()]
         for ln in lines[:35]:

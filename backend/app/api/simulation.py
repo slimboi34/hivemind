@@ -2198,6 +2198,47 @@ def get_simulation_dynamics(simulation_id: str):
         }), 500
 
 
+@simulation_bp.route('/<simulation_id>/recap', methods=['GET'])
+def get_simulation_recap(simulation_id: str):
+    """
+    Hivemind "What happened" recap: chaptered facts from the action logs plus
+    the best story available without an LLM call (a cached AI-written story
+    for the same data, otherwise a template). Read-only.
+    """
+    try:
+        from ..services.run_recap import get_recap
+
+        return jsonify({"success": True, "data": get_recap(simulation_id)})
+    except Exception as e:
+        logger.error(f"Failed to build recap: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
+@simulation_bp.route('/<simulation_id>/recap', methods=['POST'])
+def write_simulation_recap(simulation_id: str):
+    """
+    Have the LLM write the "What happened" story from the run's facts and
+    cache it. Body: {"force": true} rewrites even when a story for the same
+    data is cached.
+    """
+    try:
+        from ..services.run_recap import write_recap
+
+        body = request.get_json(silent=True) or {}
+        data = write_recap(simulation_id, force=bool(body.get("force")))
+        return jsonify({"success": True, "data": data})
+    except Exception as e:
+        logger.error(f"Failed to write recap: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": f"Could not write the story: {str(e)}",
+        }), 502
+
+
 @simulation_bp.route('/<simulation_id>/consensus-report.pdf', methods=['GET'])
 def download_consensus_report_pdf(simulation_id: str):
     """
@@ -2215,7 +2256,7 @@ def download_consensus_report_pdf(simulation_id: str):
             io.BytesIO(pdf_bytes),
             mimetype="application/pdf",
             as_attachment=True,
-            download_name=f"{simulation_id}-consensus.pdf",
+            download_name=f"{simulation_id}-hivemind-report.pdf",
         )
     except Exception as e:
         logger.error(f"Failed to build consensus PDF: {str(e)}")

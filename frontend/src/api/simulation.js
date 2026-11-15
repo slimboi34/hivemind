@@ -171,6 +171,23 @@ export const getSimulationDynamics = (simulationId) => {
 }
 
 /**
+ * "What happened" recap: chaptered facts plus the best story available without an LLM call
+ * @param {string} simulationId
+ */
+export const getSimulationRecap = (simulationId) => {
+  return service.get(`/api/simulation/${simulationId}/recap`)
+}
+
+/**
+ * Have the AI write (or, with force, rewrite) the "What happened" story and cache it
+ * @param {string} simulationId
+ * @param {boolean} force
+ */
+export const writeSimulationRecap = (simulationId, force = false) => {
+  return service.post(`/api/simulation/${simulationId}/recap`, { force })
+}
+
+/**
  * Absolute URL for the consensus PDF download (browser navigation / <a download>)
  * @param {string} simulationId
  */
