@@ -2239,6 +2239,21 @@ def write_simulation_recap(simulation_id: str):
         }), 502
 
 
+@simulation_bp.route('/<simulation_id>/cast', methods=['GET'])
+def get_simulation_cast(simulation_id: str):
+    """
+    The cast as a tree (group -> kind -> participant), with which personas are
+    written so far. Works during agent setup and for finished runs. Read-only.
+    """
+    try:
+        from ..services.run_cast import get_cast
+
+        return jsonify({"success": True, "data": get_cast(simulation_id)})
+    except Exception as e:
+        logger.error(f"Failed to build cast: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @simulation_bp.route('/<simulation_id>/briefing', methods=['GET'])
 def get_simulation_briefing(simulation_id: str):
     """

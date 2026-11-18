@@ -61,6 +61,11 @@
             {{ $t('step2.generateAgentPersonaDesc') }}
           </p>
 
+          <!-- Hivemind: the cast as a tree, filling in as each persona is written -->
+          <div v-if="simulationId && (phase >= 1 || profiles.length > 0)" class="hm-analytics cast-embed">
+            <CastTree :simulation-id="simulationId" />
+          </div>
+
           <!-- Profiles Stats -->
           <div v-if="profiles.length > 0" class="stats-grid">
             <div class="stat-card">
@@ -636,6 +641,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
+import CastTree from './analytics/CastTree.vue'
 import {
   prepareSimulation,
   getPrepareStatus,
@@ -2600,4 +2606,7 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
 }
+
+/* Hivemind: cast tree shown while agents are spun up */
+.cast-embed { margin: var(--hm-space-4) 0; }
 </style>

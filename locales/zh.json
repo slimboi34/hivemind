@@ -33,15 +33,15 @@
     "visitGithub": "GitHub"
   },
   "home": {
-    "tagline": "群体智能预测",
+    "tagline": "社会群体智能模拟",
     "version": "v0.1 预览版",
-    "heroTitle1": "提出问题。",
-    "heroTitle2": "预演反应。",
+    "heroTitle1": "围绕任何事件，搭建一个模拟互联网。",
+    "heroTitle2": "观察它如何反应。",
     "heroDesc": "{brand} 读取你的文档，将其中的人物与机构化身为{agentScale}，让它们在两个模拟社交网络中发帖、争论与互动。调整输入、再次运行，找到{optimalSolution}。",
     "heroDescBrand": "Hivemind",
     "heroDescAgentScale": " AI 智能体",
     "heroDescOptimalSolution": "值得采取行动的结果",
-    "slogan": "在做决定之前，先预演未来",
+    "slogan": "为任何事件构建一个模拟世界",
     "systemStatus": "状态",
     "systemReady": "就绪",
     "systemReadyDesc": "引擎空闲。提出一个问题即可开始推演，有资料可一并添加。",
@@ -870,7 +870,17 @@
     "briefPosition": "立场",
     "briefLikelyMove": "可能的动作",
     "briefWatch": "值得关注",
-    "briefFoot": "所有参与者均为模拟。“可能的下一步”和“可能的动作”是根据模拟参与者的发言作出的推断，并非真实机构的表态。PDF 还包含推演过程和运行诊断。"
+    "briefFoot": "所有参与者均为模拟。“可能的下一步”和“可能的动作”是根据模拟参与者的发言作出的推断，并非真实机构的表态。PDF 还包含推演过程和运行诊断。",
+    "castTitle": "角色阵容",
+    "castSubtitle": "所有模拟参与者，按其扮演的角色分组。点击名字可在页面中追踪。",
+    "castProgress": "正在生成 · {ready} / {total}",
+    "castReady": "{n} 个智能体已就绪",
+    "castAgents": "智能体",
+    "castEmpty": "开始配置智能体后，阵容会显示在这里。",
+    "castAria": "按角色分组的 {n} 个模拟参与者树状图",
+    "castStance": "初始立场：",
+    "castPending": "人设仍在撰写中…",
+    "castGroupRing": "环的颜色 = 群体"
   },
   "godseye": {
     "title": "来自 God's Eye View 的实时态势",

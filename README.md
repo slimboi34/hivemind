@@ -5,20 +5,27 @@
   <img src="./brand/logo.svg" alt="Hivemind" width="360">
 </picture>
 
-**Swarm forecasting. Ask the question, rehearse the reaction.**
+**Social swarm simulation. Build a fake internet around any event and watch how it reacts.**
 
 [English](./README.md) | [中文文档](./README-ZH.md)
 
 </div>
 
-Hivemind turns a set of documents into a simulated public. It reads your sources, builds a
-knowledge graph of the people and organisations in them, and casts each one as an AI agent
-with a background, memories and a stance. The agents post, reply, like and argue on two
-simulated social platforms, round by round. A report agent then studies what happened and
-writes a forecast. You can question it, or interview any agent directly.
+Hivemind is a tool for deploying a swarm of AI agents into a simulated world. Give it a
+situation (a question on its own, or a question with documents) and it:
 
-Use it to rehearse how investors, regulators, the press or the public might react to an
-announcement, a policy or a crisis before it happens.
+1. **Researches it.** It reads your evidence, or writes its own background brief, and maps
+   the people, organisations and relationships into a knowledge graph.
+2. **Deploys the swarm.** Everyone in that graph becomes an AI agent with a persona, a
+   stance and a memory.
+3. **Runs a simulated internet.** The agents post, reply, like and argue on two simulated
+   social platforms, round by round.
+4. **Tells you what happened.** A plain-language briefing covers where the agents agree,
+   where they split, and how each group and company would react. You can then question the
+   report agent or interview any simulated participant.
+
+It works for almost any kind of event: an announcement, a policy, a scandal, a price change,
+a sports ruling. Every participant is simulated; it is a rehearsal, not a record of real events.
 
 ![Home: upload seed documents and describe what to forecast](./docs/images/home.png)
 

@@ -41,3 +41,16 @@ export const INK = {
 
 export const fmt = (n) => (n ?? 0).toLocaleString()
 export const pct = (x) => (x === null || x === undefined ? '–' : `${Math.round(x * 100)}%`)
+
+// One colour per cast group (see backend run_briefing.GROUPS). Group names are always
+// shown as text beside the colour, so colour is never the only way to tell groups apart.
+export const GROUP_COLOR = {
+  media: '#2a78d6',
+  investors: '#1baf7a',
+  government: '#eb6834',
+  experts: '#8a5cd6',
+  companies: '#c98a00',
+  public: '#d6457f',
+  organizations: '#2aa7b8',
+  other: '#898781'
+}

@@ -26,22 +26,22 @@
     "files": "files"
   },
   "meta": {
-    "title": "Hivemind · Swarm forecasting",
-    "description": "Hivemind turns your documents into a simulated public of AI agents and reports how the crowd is likely to react."
+    "title": "Hivemind · Social swarm simulation",
+    "description": "Hivemind deploys a swarm of AI agents into a simulated internet built around your situation and reports how each group reacts."
   },
   "nav": {
     "visitGithub": "GitHub"
   },
   "home": {
-    "tagline": "Swarm forecasting",
+    "tagline": "Social swarm simulation",
     "version": "v0.1 preview",
-    "heroTitle1": "Ask the question.",
-    "heroTitle2": "Rehearse the reaction.",
-    "heroDesc": "{brand} takes your question and any evidence you add, casts the people and organisations involved as {agentScale}, and lets them post, argue and react on two simulated networks. Then it tells you where they agree, where they split, and {optimalSolution}.",
+    "heroTitle1": "Build a fake internet around any event.",
+    "heroTitle2": "Watch how it reacts.",
+    "heroDesc": "{brand} deploys a swarm of {agentScale} into a simulated internet built around your situation. It researches the topic, casts the people and organisations involved, and lets them post, argue and react. Then it tells you where they agree, where they split, and {optimalSolution}.",
     "heroDescBrand": "Hivemind",
     "heroDescAgentScale": "AI agents",
     "heroDescOptimalSolution": "how each group would react",
-    "slogan": "Rehearse the future before you commit to it",
+    "slogan": "A simulated world for any event",
     "systemStatus": "Status",
     "systemReady": "Ready",
     "systemReadyDesc": "The engine is idle. Ask a question to start a run. Add evidence if you have it.",
@@ -50,12 +50,12 @@
     "metricHighAvail": "Scalable",
     "metricHighAvailDesc": "Dozens to millions of agents",
     "workflowSequence": "How a run works",
-    "step01Title": "Build the graph",
-    "step01Desc": "Extract the people and organisations from your evidence, or from a brief Hivemind writes for you, into a knowledge graph.",
-    "step02Title": "Cast the agents",
-    "step02Desc": "Turn those entities into agent personas with memories, stances and schedules.",
-    "step03Title": "Simulate",
-    "step03Desc": "Agents post, reply and react on two simulated platforms, round by round.",
+    "step01Title": "Research the situation",
+    "step01Desc": "Hivemind reads your evidence, or writes its own brief, and maps the people, organisations and relationships into a knowledge graph.",
+    "step02Title": "Deploy the swarm",
+    "step02Desc": "Everyone in the graph becomes an AI agent with a persona, a stance and a schedule.",
+    "step03Title": "Run the simulated internet",
+    "step03Desc": "The agents post, reply and react on two simulated social platforms, round by round.",
     "step04Title": "Report",
     "step04Desc": "A report agent interrogates the results and writes the forecast. A plain-language briefing covers the consensus and how each group would react.",
     "step05Title": "Interrogate",
@@ -870,7 +870,17 @@
     "briefPosition": "Position",
     "briefLikelyMove": "Likely move",
     "briefWatch": "What to watch",
-    "briefFoot": "Every participant is simulated. \"Likely next\" and \"Likely move\" are inferences from what the simulated participants wrote, not statements by the real organisations. The PDF adds the story of the run and the run diagnostics."
+    "briefFoot": "Every participant is simulated. \"Likely next\" and \"Likely move\" are inferences from what the simulated participants wrote, not statements by the real organisations. The PDF adds the story of the run and the run diagnostics.",
+    "castTitle": "The cast",
+    "castSubtitle": "Every simulated participant, grouped by the role they play. Click a name to follow them through the page.",
+    "castProgress": "Spinning up · {ready} of {total}",
+    "castReady": "{n} agents ready",
+    "castAgents": "agents",
+    "castEmpty": "The cast appears here as soon as agent setup starts.",
+    "castAria": "Tree of {n} simulated participants grouped by role",
+    "castStance": "Starting stance:",
+    "castPending": "Persona still being written…",
+    "castGroupRing": "Ring colour = group"
   },
   "godseye": {
     "title": "Live situation from God's Eye View",

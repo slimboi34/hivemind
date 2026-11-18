@@ -1,5 +1,9 @@
 # Hivemind
 
+**What it is:** a social swarm simulation tool. It builds a fake internet around a situation:
+it researches the topic, deploys a swarm of AI agents as the people and organisations
+involved, runs them on simulated social platforms, and reports how they react.
+
 Our working copy of **MiroFish** (official repo: https://github.com/666ghj/MiroFish,
 mirofish.ai), a swarm-intelligence "predict anything" engine. Step 1 is running it
 unchanged; step 2 is re-engineering it into Hivemind.
@@ -80,6 +84,14 @@ identical to upstream.
   document. This does change the input to the prediction pipeline for those runs: the brief
   comes from the model's general knowledge and can be out of date, and it says so at the top.
   Runs that upload documents are unaffected.
+- **Cast tree** (Analytics page, and agent setup while personas are being written).
+  `GET /api/simulation/<id>/cast` (`run_cast.py`, `CastTree.vue`): a radial tree of
+  run → group → kind → participant. The profile generator now saves the planned cast and
+  which personas are finished (`cast_progress.json`), so agents light up as they are spun up.
+- **Influence network**: nodes carry a ring in their group's colour, groups settle near each
+  other, and more names are labelled.
+- **Knowledge graph**: nodes are sized by how connected they are, hovering a node fades
+  everything more than one step away, and labels are no longer cut at 8 characters.
 - **What happened** (Analytics page, and the story section of the PDF).
   `GET/POST /api/simulation/<id>/recap` (`run_recap.py`): a plain-language story of each run.
   - Facts are deterministic. Rounds are grouped into stretches (one per round for short runs,

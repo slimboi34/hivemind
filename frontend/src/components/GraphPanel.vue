@@ -470,6 +470,20 @@ const renderGraph = () => {
     })
   })
     
+  // Hivemind: size each node by how connected it is, so the hubs of the story stand out.
+  const degree = {}
+  const neighbourIds = {}
+  edges.forEach(e => {
+    if (e.isSelfLoop) return
+    degree[e.source] = (degree[e.source] || 0) + 1
+    degree[e.target] = (degree[e.target] || 0) + 1
+    ;(neighbourIds[e.source] ||= new Set()).add(e.target)
+    ;(neighbourIds[e.target] ||= new Set()).add(e.source)
+  })
+  const nodeRadius = (d) => 7 + Math.min(11, Math.sqrt(degree[d.id] || 0) * 2.4)
+  const isNear = (a, b) => a === b || !!neighbourIds[a]?.has(b)
+  const endId = (end) => (typeof end === 'object' ? end.id : end)
+
   // Color scale
   const colorMap = {}
   entityTypes.value.forEach(t => colorMap[t.name] = t.color)
@@ -661,7 +675,7 @@ const renderGraph = () => {
   const node = nodeGroup.selectAll('circle')
     .data(nodes)
     .enter().append('circle')
-    .attr('r', 10)
+    .attr('r', nodeRadius)
     .attr('fill', d => getColor(d.type))
     .attr('stroke', '#fff')
     .attr('stroke-width', 2.5)
@@ -725,22 +739,39 @@ const renderGraph = () => {
       if (!selectedItem.value || selectedItem.value.data?.uuid !== d.rawData.uuid) {
         d3.select(event.target).attr('stroke', '#333').attr('stroke-width', 3)
       }
+      // Hivemind: fade everything that is not this node or one step away from it.
+      if (d._isDragging) return
+      const near = (l) => endId(l.source) === d.id || endId(l.target) === d.id
+      node.style('opacity', n => (isNear(d.id, n.id) ? 1 : 0.12))
+      nodeLabels.style('opacity', n => (isNear(d.id, n.id) ? 1 : 0.1))
+      link.style('opacity', l => (near(l) ? 1 : 0.06))
+      linkLabels.style('opacity', l => (near(l) ? 1 : 0.04))
+      linkLabelBg.style('opacity', l => (near(l) ? 1 : 0.04))
     })
     .on('mouseleave', (event, d) => {
       if (!selectedItem.value || selectedItem.value.data?.uuid !== d.rawData.uuid) {
         d3.select(event.target).attr('stroke', '#fff').attr('stroke-width', 2.5)
       }
+      node.style('opacity', 1)
+      nodeLabels.style('opacity', 1)
+      link.style('opacity', 1)
+      linkLabels.style('opacity', 1)
+      linkLabelBg.style('opacity', 1)
     })
 
   // Node Labels
   const nodeLabels = nodeGroup.selectAll('text')
     .data(nodes)
     .enter().append('text')
-    .text(d => d.name.length > 8 ? d.name.substring(0, 8) + '…' : d.name)
-    .attr('font-size', '11px')
+    .text(d => d.name.length > 20 ? d.name.substring(0, 19) + '…' : d.name)
+    .attr('font-size', d => ((degree[d.id] || 0) >= 6 ? '12px' : '11px'))
     .attr('fill', '#333')
-    .attr('font-weight', '500')
-    .attr('dx', 14)
+    .attr('font-weight', d => ((degree[d.id] || 0) >= 6 ? '600' : '500'))
+    .attr('dx', d => nodeRadius(d) + 4)
+    .attr('paint-order', 'stroke')
+    .attr('stroke', 'rgba(255,255,255,0.85)')
+    .attr('stroke-width', 3)
+    .attr('stroke-linejoin', 'round')
     .attr('dy', 4)
     .style('pointer-events', 'none')
     .style('font-family', 'system-ui, sans-serif')

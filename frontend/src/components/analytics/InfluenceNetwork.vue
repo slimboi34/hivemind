@@ -23,6 +23,10 @@
         <span>{{ $t('analytics.categories.support') }}</span>
       </div>
     </div>
+    <ul v-if="groupsShown.length" class="legend group-legend">
+      <li class="legend-note">{{ $t('analytics.castGroupRing') }}</li>
+      <li v-for="g in groupsShown" :key="g.key"><span class="sw ring" :style="{ borderColor: g.color }"></span>{{ g.label }}</li>
+    </ul>
 
     <div class="stage" ref="stageEl" @pointerleave="hoverNode = null; hoverEdge = null">
       <svg ref="svgEl" :width="width" :height="HEIGHT" @click.self="emit('update:selected', null)">
@@ -44,7 +48,8 @@
           </g>
           <g class="nodes">
             <circle v-for="n in drawnNodes" :key="n.name" :cx="n.x" :cy="n.y" :r="n.r"
-              :fill="n.fill" :fill-opacity="n.opacity" :stroke-opacity="n.opacity"
+              :fill="n.ghost && n.ring ? n.ring : n.fill" :fill-opacity="n.opacity" :stroke-opacity="n.opacity"
+              :style="n.ring && !n.ghost && n.name !== selected ? { stroke: n.ring, strokeWidth: '2.5px' } : null"
               :class="{ selected: n.name === selected, ghost: n.ghost }"
               @pointerenter="hoverNode = n" @pointerleave="hoverNode = null"
               @click.stop="emit('update:selected', n.name === selected ? null : n.name)" />
@@ -91,18 +96,22 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import * as d3 from 'd3'
-import { INTERACTION_KINDS, CATEGORY_COLOR, fmt, pct } from './palette'
+import { INTERACTION_KINDS, CATEGORY_COLOR, GROUP_COLOR, fmt, pct } from './palette'
 
 const props = defineProps({
   agents: { type: Array, default: () => [] },
   edges: { type: Array, default: () => [] },
   maxRound: { type: Number, default: 0 },
-  selected: { type: String, default: null }
+  selected: { type: String, default: null },
+  // name -> group key and group key -> label, from the cast. Optional: without them the
+  // network draws exactly as before, with no group rings or clustering.
+  agentGroups: { type: Object, default: () => ({}) },
+  groupLabels: { type: Object, default: () => ({}) }
 })
 const emit = defineEmits(['update:selected'])
 
 const HEIGHT = 560
-const LABEL_COUNT = 10
+const LABEL_COUNT = 40 // an upper bound; labels that would overlap are still skipped
 const uid = Math.random().toString(36).slice(2, 8)
 
 const stageEl = ref(null)
@@ -136,6 +145,16 @@ const runLayout = () => {
     const p = prev.get(a.name)
     return { name: a.name, x: p?.x, y: p?.y }
   })
+  // Each group gets a home direction, so people of one kind settle near each other
+  // and silent participants sit with their group instead of drifting at random.
+  const keys = [...new Set(Object.values(props.agentGroups))].sort()
+  const home = (name) => {
+    const i = keys.indexOf(props.agentGroups[name])
+    if (i < 0) return { x: 0, y: 0 }
+    const angle = (2 * Math.PI * i) / keys.length - Math.PI / 2
+    return { x: Math.cos(angle) * 150, y: Math.sin(angle) * 105 }
+  }
+  const pull = keys.length > 1 ? 0.05 : 0
   if (!nodes.length) { positions.value = new Map(); return }
   const pairs = new Map()
   for (const e of props.edges) {
@@ -148,12 +167,12 @@ const runLayout = () => {
   const allKnown = nodes.every(n => n.x !== undefined)
   const maxPair = Math.max(1, ...links.map(l => l.weight))
   const sim = d3.forceSimulation(nodes)
-    .force('link', d3.forceLink(links).id(d => d.name).distance(110)
+    .force('link', d3.forceLink(links).id(d => d.name).distance(150)
       .strength(l => 0.04 + 0.5 * (l.weight / maxPair)))
-    .force('charge', d3.forceManyBody().strength(-420).distanceMax(800))
-    .force('x', d3.forceX(0).strength(0.015))
-    .force('y', d3.forceY(0).strength(0.09))
-    .force('collide', d3.forceCollide(d => rScale.value(fullEngagement.value.get(d.name) || 0) + 14))
+    .force('charge', d3.forceManyBody().strength(-700).distanceMax(900))
+    .force('x', d3.forceX(d => home(d.name).x).strength(0.015 + pull))
+    .force('y', d3.forceY(d => home(d.name).y).strength(0.09 + pull))
+    .force('collide', d3.forceCollide(d => rScale.value(fullEngagement.value.get(d.name) || 0) + 22))
     .stop()
   if (allKnown) sim.alpha(0.25)
   const ticks = allKnown ? 60 : 320
@@ -250,9 +269,10 @@ const drawnNodes = computed(() => {
       agent: a,
       x: t.applyX(p.x),
       y: t.applyY(p.y),
-      r: st.active ? rScale.value(st.engagement) : 3,
+      r: st.active ? rScale.value(st.engagement) : 3.5,
       fill: st.approval === null ? '#b9b8b0' : approvalColor(st.approval),
-      opacity: !st.active ? 0.18 : dim ? 0.15 : 1,
+      ring: GROUP_COLOR[props.agentGroups[a.name]] || null,
+      opacity: !st.active ? 0.3 : dim ? 0.15 : 1,
       ghost: !st.active,
       recv: st.recv,
       approval: st.approval,
@@ -367,6 +387,17 @@ watch(() => props.maxRound, (m) => {
 }, { immediate: true })
 
 watch(() => [props.agents.length, props.edges.length], runLayout)
+// Groups arrive a moment after the network; lay it out again so they can cluster.
+watch(() => Object.keys(props.agentGroups).length, () => {
+  positions.value = new Map()
+  runLayout()
+})
+
+const groupsShown = computed(() => {
+  const present = new Set(props.agents.map(a => props.agentGroups[a.name]).filter(Boolean))
+  return Object.keys(GROUP_COLOR).filter(k => present.has(k))
+    .map(k => ({ key: k, label: props.groupLabels[k] || k, color: GROUP_COLOR[k] }))
+})
 
 // ---------- mount ----------
 let ro = null
@@ -388,6 +419,9 @@ svg:active { cursor: grabbing; }
 .nodes circle { stroke: var(--hm-surface); stroke-width: 2px; cursor: pointer; transition: r 0.35s ease, fill 0.35s ease, fill-opacity 0.2s; }
 .nodes circle.selected { stroke: var(--hm-ink); stroke-width: 3px; }
 .nodes circle.ghost { pointer-events: none; }
+.group-legend { margin-top: -2px; font-size: 11px; color: var(--hm-ink-3); }
+.legend-note { color: var(--hm-ink-4); }
+.sw.ring { background: var(--hm-surface); border: 2.5px solid; border-radius: 50%; width: 11px; height: 11px; box-sizing: border-box; }
 .edges path { transition: stroke-opacity 0.2s; pointer-events: none; }
 .edge-hit { fill: none; stroke: transparent; stroke-width: 10px; cursor: help; }
 .labels text {

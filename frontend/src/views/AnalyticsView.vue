@@ -46,6 +46,8 @@
           @write="writeRecap"
         />
 
+        <CastTree :simulation-id="simulationId" :live="false" v-model:selected="selected" @loaded="onCast" />
+
         <HealthBadge v-if="dynamics?.health" :health="dynamics.health" />
 
         <section class="kpis">
@@ -93,6 +95,8 @@
             :agents="data.agents"
             :edges="data.edges"
             :max-round="maxRound"
+            :agent-groups="agentGroups"
+            :group-labels="groupLabels"
             v-model:selected="selected"
           />
           <div class="side">
@@ -128,6 +132,7 @@ import CascadeForest from '../components/analytics/CascadeForest.vue'
 import BranchingPanel from '../components/analytics/BranchingPanel.vue'
 import WhatHappened from '../components/analytics/WhatHappened.vue'
 import Briefing from '../components/analytics/Briefing.vue'
+import CastTree from '../components/analytics/CastTree.vue'
 import {
   getSimulationAnalytics,
   getSimulationDynamics,
@@ -156,6 +161,19 @@ const writingBriefing = ref(false)
 const briefingError = ref('')
 let autoBriefTried = false
 const downloadingPdf = ref(false)
+// name -> group key, from the cast tree; lets the network colour nodes by group.
+const agentGroups = ref({})
+const groupLabels = ref({})
+const onCast = (cast) => {
+  const map = {}
+  const labels = {}
+  for (const g of cast?.groups || []) {
+    labels[g.key] = g.label
+    for (const t of g.types) for (const a of t.agents) map[a.name] = g.key
+  }
+  agentGroups.value = map
+  groupLabels.value = labels
+}
 const pdfError = ref('')
 const loading = ref(false)
 const error = ref('')

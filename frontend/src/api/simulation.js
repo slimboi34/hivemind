@@ -188,6 +188,14 @@ export const writeSimulationRecap = (simulationId, force = false) => {
 }
 
 /**
+ * The cast as a tree (group -> kind -> participant), with which personas are written so far
+ * @param {string} simulationId
+ */
+export const getSimulationCast = (simulationId) => {
+  return service.get(`/api/simulation/${simulationId}/cast`)
+}
+
+/**
  * Briefing: group and company facts plus the best reading available without an LLM call
  * @param {string} simulationId
  */

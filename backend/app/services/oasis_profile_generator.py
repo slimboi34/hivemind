@@ -9,6 +9,7 @@ OASIS Agent Profile生成器
 """
 
 import json
+import os
 import random
 import time
 from typing import Dict, Any, List, Optional
@@ -201,6 +202,9 @@ class OasisAgentProfile:
             "source_entity_type": self.source_entity_type,
             "created_at": self.created_at,
         }
+
+
+CAST_PROGRESS_FILE = "cast_progress.json"
 
 
 class OasisProfileGenerator:
@@ -947,6 +951,31 @@ class OasisProfileGenerator:
         completed_count = [0]  # 使用列表以便在闭包中修改
         lock = Lock()
         
+        # Hivemind: the whole planned cast, with which personas are written so far.
+        # The cast tree reads this to show agents appearing as they are spun up.
+        def save_cast_progress():
+            if not realtime_output_path:
+                return
+            path = os.path.join(os.path.dirname(realtime_output_path), CAST_PROGRESS_FILE)
+            rows = [
+                {
+                    "agent_id": i,
+                    "name": e.name,
+                    "entity_type": e.get_entity_type() or "Entity",
+                    "ready": profiles[i] is not None,
+                }
+                for i, e in enumerate(entities)
+            ]
+            try:
+                tmp = path + ".tmp"
+                with open(tmp, 'w', encoding='utf-8') as f:
+                    json.dump(rows, f, ensure_ascii=False)
+                os.replace(tmp, path)
+            except OSError as e:
+                logger.warning(f"Could not save cast progress: {e}")
+
+        save_cast_progress()
+
         # 实时写入文件的辅助函数
         def save_profiles_realtime():
             """实时保存已生成的 profiles 到文件"""
@@ -954,6 +983,7 @@ class OasisProfileGenerator:
                 return
             
             with lock:
+                save_cast_progress()
                 # 过滤出已生成的 profiles
                 existing_profiles = [p for p in profiles if p is not None]
                 if not existing_profiles:

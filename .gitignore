@@ -60,3 +60,6 @@ backend/uploads/
 data/
 # Local browser-automation scratch
 .playwright-mcp/
+
+# Marketing captures (contain simulated statements by named real people; share deliberately)
+linkedin/
