@@ -803,7 +803,12 @@ def _load_inputs(simulation_id: str, dynamics: Optional[Dict[str, Any]] = None):
     run = {
         "status": run_state.runner_status.value if run_state else None,
         "total_rounds": run_state.total_rounds if run_state else 0,
-        "ready_for_report": bool(getattr(run_state, "ready_for_report", False)) if run_state else False,
+        # All rounds played (see run_briefing._load_inputs): do not wait for the
+        # kept-alive process or graph-memory writes before telling the story.
+        "ready_for_report": bool(run_state) and (
+            bool(getattr(run_state, "ready_for_report", False))
+            or SimulationRunner._check_all_platforms_completed(run_state)
+        ),
     }
     roster = len(_load_configured_agents(simulation_id)) or None
     facts = build_recap_facts(

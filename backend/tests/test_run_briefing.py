@@ -67,6 +67,8 @@ def test_entity_types_map_to_reader_groups():
     assert group_for("RegulatoryAgency") == "government"
     assert group_for("FinancialMediaOutlet") == "media"
     assert group_for("Person") == "public"
+    assert group_for("GovernmentOfficial") == "government"
+    assert group_for("RugbyOfficial") == "other"               # an official, but not the state
     assert group_for("Widget") == "other"
     assert group_for(None) == "other"
     assert type_label("InvestmentAnalystFirm") == "Investment analyst firm"

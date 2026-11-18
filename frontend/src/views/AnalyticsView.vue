@@ -166,7 +166,11 @@ watch(selected, (name) => {
 let timer = null
 
 const t = computed(() => data.value?.totals || {})
-const isLive = computed(() => ['running', 'starting', 'stopping'].includes(data.value?.run?.status))
+// A run stays "running" after its last round while agents are kept alive for
+// interviews. Once every round has been played there is nothing left to watch.
+const isLive = computed(() =>
+  ['running', 'starting', 'stopping'].includes(data.value?.run?.status) && !briefing.value?.facts?.run?.finished
+)
 const maxRound = computed(() => Math.max(0, (data.value?.rounds?.length || 1) - 1))
 const roundsDone = computed(() => {
   const rounds = data.value?.rounds || []
@@ -182,7 +186,7 @@ const supportShare = computed(() => {
 const statusText = computed(() => {
   const s = data.value?.run?.status
   if (isLive.value) return tr('analytics.live')
-  if (s === 'completed' || s === 'stopped') return tr('analytics.finished')
+  if (s === 'completed' || s === 'stopped' || briefing.value?.facts?.run?.finished) return tr('analytics.finished')
   if (!s || s === 'idle') return t.value.actions ? tr('analytics.finished') : tr('analytics.notStarted')
   return s
 })

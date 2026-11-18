@@ -58,8 +58,9 @@ GROUPS: List[Tuple[str, str, Tuple[str, ...]]] = [
     ("media", "Media", ("media", "news", "press", "journal", "outlet", "reporter", "broadcast", "publication")),
     ("investors", "Investors and analysts", ("invest", "analyst", "fund", "bank", "trader", "shareholder", "broker", "venture")),
     ("government", "Government and regulators", (
-        "government", "official", "politic", "legislat", "committee", "regulat", "agency", "ministry",
-        "court", "party", "senat", "congress", "parliament", "authority", "department", "military", "state",
+        # Not a bare "official": a RugbyOfficial or MatchOfficial is not the government.
+        "government", "politic", "legislat", "committee", "regulat", "agency", "ministry",
+        "court", "senat", "congress", "parliament", "authority", "department", "military",
     )),
     ("experts", "Experts and institutions", (
         "legal", "law", "universit", "professor", "expert", "research", "academ", "scien", "ngo",
@@ -654,7 +655,14 @@ def _load_inputs(simulation_id: str, dynamics: Optional[Dict[str, Any]] = None):
         minutes_per_round=(config.get("time_config") or {}).get("minutes_per_round") or 60,
         run={
             "status": run_state.runner_status.value if run_state else None,
-            "ready_for_report": bool(getattr(run_state, "ready_for_report", False)) if run_state else False,
+            # Every round has been played once all platforms logged simulation_end. The
+            # run can stay "running" long after that while agents are kept alive for
+            # interviews or graph-memory writes are still draining; neither changes
+            # what happened, so the write-up does not wait for them.
+            "ready_for_report": bool(run_state) and (
+                bool(getattr(run_state, "ready_for_report", False))
+                or SimulationRunner._check_all_platforms_completed(run_state)
+            ),
         },
         health=dynamics.get("health"),
     )
