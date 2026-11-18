@@ -7,8 +7,18 @@ cd "$(dirname "$0")"
 NODE22="$(ls -d "$HOME"/.nvm/versions/node/v22.* 2>/dev/null | tail -1)"
 [ -n "$NODE22" ] && PATH="$NODE22/bin:$PATH" && export PATH
 
-if ! grep -q '^LLM_API_KEY=..*' .env 2>/dev/null || ! grep -q '^ZEP_API_KEY=..*' .env 2>/dev/null; then
-  echo "Fill in LLM_API_KEY and ZEP_API_KEY in $(pwd)/.env first." >&2
+# First run: create .env from the template so there is one obvious file to edit.
+[ -f .env ] || cp .env.example .env
+
+if grep -q -E '^(LLM_API_KEY|ZEP_API_KEY)=(your_.*)?$' .env; then
+  cat >&2 <<EOF
+Hivemind needs two keys before it can run. Open $(pwd)/.env and set:
+
+  LLM_API_KEY   your Anthropic key   https://console.anthropic.com/  (API keys)
+  ZEP_API_KEY   your Zep Cloud key   https://app.getzep.com/         (free tier is enough)
+
+Then run ./hivemind.sh again. .env is gitignored; your keys are never committed.
+EOF
   exit 1
 fi
 

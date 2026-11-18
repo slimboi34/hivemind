@@ -72,26 +72,43 @@ It refreshes every 5 seconds while a simulation is running.
 
 ## Run it
 
-You need:
+You need three things installed and two keys.
 
-- Node.js 20.19 or newer (Node 22 recommended)
-- Python 3.12 with [uv](https://docs.astral.sh/uv/)
-- An LLM API key (any OpenAI-compatible endpoint, including Anthropic's)
-- A [Zep Cloud](https://www.getzep.com/) API key
+**Installed:** Node.js 20.19 or newer (22 recommended), Python 3.12, and
+[uv](https://docs.astral.sh/uv/).
+
+**Keys** (both yours; Hivemind ships with none):
+
+| Key | What it is for | Where to get it |
+| --- | --- | --- |
+| `LLM_API_KEY` | Claude, which plays every simulated participant and writes the briefing | [console.anthropic.com](https://console.anthropic.com/) → API keys |
+| `ZEP_API_KEY` | The knowledge graph and agent memory | [app.getzep.com](https://app.getzep.com/) (free tier is enough for small runs) |
+
+**Start it:**
 
 ```bash
-cp .env.example .env      # then set LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_NAME and ZEP_API_KEY
-./hivemind.sh             # installs what's missing, then starts both servers
+git clone https://github.com/slimboi34/hivemind.git
+cd hivemind
+./hivemind.sh       # first run creates .env and tells you which two lines to fill in
 ```
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5001
+Open `.env`, paste your two keys, and run `./hivemind.sh` again. It installs what is missing
+and starts both servers:
 
-`hivemind.sh` uses nvm's Node 22 if it's installed. To run the servers separately, use
-`npm run backend` and `npm run frontend`; `npm run build` builds the frontend for production.
+- App: http://localhost:3000
+- API: http://localhost:5001
 
-Runs cost money: every agent makes LLM calls every round. Try a short run first; on the
-setup screen, switch to Custom and use fewer rounds.
+Your keys live only in `.env`, which is gitignored and never committed. The model is set by
+`LLM_MODEL_NAME` (default `claude-haiku-5-5`); any OpenAI-compatible provider also works, see
+the comments in `.env.example`.
+
+**Your first run:** type a question on the home screen and press **Run simulation**. No
+documents are needed. On the agent setup screen switch to **Custom** and choose 10 rounds or
+fewer: every participant makes a model call every round, so short runs are cheap and long
+ones are not. When it finishes, open **Analytics** and press **Download briefing PDF**.
+
+To run the servers separately use `npm run backend` and `npm run frontend`; `npm run build`
+builds the frontend for production.
 
 ## Project layout
 
