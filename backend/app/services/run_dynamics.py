@@ -60,6 +60,17 @@ def _level(ok: bool, warn: bool = False) -> str:
     return "green"
 
 
+def _count_feed_errors(simulation_id: Optional[str]) -> int:
+    """Lines the OASIS patch layer printed when building a feed failed."""
+    if not simulation_id:
+        return 0
+    try:
+        with open(os.path.join(_sim_dir(simulation_id), "simulation.log"), encoding="utf-8", errors="replace") as f:
+            return sum(1 for line in f if "[feed-error]" in line)
+    except OSError:
+        return 0
+
+
 def _health_checks(
     platforms: Dict[str, Any],
     analytics: Dict[str, Any],
@@ -68,6 +79,8 @@ def _health_checks(
 ) -> Dict[str, Any]:
     checks: List[Dict[str, Any]] = []
     reasons: List[str] = []
+
+    feed_errors = _count_feed_errors(getattr(run_state, "simulation_id", None))
 
     # Blind activations (any platform)
     blind = sum(p.get("blind_activations", 0) for p in platforms.values())
@@ -81,7 +94,8 @@ def _health_checks(
             "level": level,
             "value": round(blind_share, 3),
             "detail": (
-                f"{blind} of {acts} activations saw an empty or failed feed"
+                f"{blind} of {acts} agent turns had no feed to read"
+                + (f"; {feed_errors} feed errors in simulation.log" if feed_errors else "")
                 if acts
                 else "No activations logged yet"
             ),
@@ -89,12 +103,12 @@ def _health_checks(
     )
     if level == "red":
         reasons.append(
-            f"{round(blind_share * 100)}% of simulated users saw an empty feed (engine bug); "
-            "treat dynamics as unreliable."
+            f"In {round(blind_share * 100)}% of turns the agent was shown no feed, so it could only post "
+            "or do nothing. Treat how posts spread as unreliable."
         )
     elif level == "amber":
         reasons.append(
-            f"{round(blind_share * 100)}% of activations missed a feed refresh — watch cascade depth."
+            f"In {round(blind_share * 100)}% of turns the agent was shown no feed."
         )
 
     # Participation
@@ -103,7 +117,8 @@ def _health_checks(
     known = len(configured) or totals.get("agents_total") or active
     part = (active / known) if known else 0.0
     silent = sorted(set(configured) - {a["name"] for a in analytics.get("agents") or [] if a.get("actions")})
-    level = _level(part >= 0.5, warn=part >= 0.3)
+    # Three bands: red under 30%, amber under 50%, green from 50%.
+    level = _level(part >= 0.3, warn=part < 0.5)
     checks.append(
         {
             "id": "participation",
@@ -149,7 +164,8 @@ def _health_checks(
     # Feed degeneracy from top slot share
     top_shares = [p.get("top_slot_share", 0) for p in platforms.values() if p.get("top_slot_share")]
     top = max(top_shares) if top_shares else 0.0
-    level = _level(top < 0.35, warn=top < 0.5)
+    # Red from 50%, amber from 35%.
+    level = _level(top < 0.5, warn=top >= 0.35)
     checks.append(
         {
             "id": "feed_degeneracy",
@@ -177,7 +193,9 @@ def _health_checks(
     if n_posts:
         branching = round(derived / n_posts, 3)
     orphan_share = (orphans / roots) if roots else 0.0
-    level = _level(branching is None or branching >= 0.4, warn=branching is not None and branching >= 0.2)
+    # Red under 0.2, amber under 0.4. Most real posts draw no follow-on either, so only
+    # near-zero spread is treated as a fault.
+    level = _level(branching is None or branching >= 0.2, warn=branching is not None and branching < 0.4)
     checks.append(
         {
             "id": "branching",
@@ -204,7 +222,8 @@ def _health_checks(
         current = max((r.get("round", 0) for r in analytics.get("rounds") or []), default=0)
     if total_rounds and total_rounds > 0:
         cover = min(1.0, (current + 1) / total_rounds)
-        level = _level(cover >= 0.5, warn=cover >= 0.15)
+        # Red under 15% of the planned rounds, amber under 50%.
+        level = _level(cover >= 0.15, warn=cover < 0.5)
         checks.append(
             {
                 "id": "horizon",

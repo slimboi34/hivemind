@@ -173,6 +173,16 @@ except ImportError as e:
     print("请先安装: pip install oasis-ai camel-ai")
     sys.exit(1)
 
+# Hivemind: fix known OASIS defects before any platform is built (see oasis_patches.py).
+# The notes are printed so each run's log records which fixes were active.
+try:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import oasis_patches
+    for _note in oasis_patches.apply():
+        print(f"[oasis-patch] {_note}", flush=True)
+except Exception as _patch_error:  # never block a run on the patch layer itself
+    print(f"[oasis-patch] not applied: {_patch_error}", flush=True)
+
 
 # Twitter可用动作（不包含INTERVIEW，INTERVIEW只能通过ManualAction手动触发）
 TWITTER_ACTIONS = [

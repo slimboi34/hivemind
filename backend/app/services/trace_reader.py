@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from datetime import datetime
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -149,31 +150,59 @@ def _comment_leaves(
     return by_post
 
 
+# Trace rows that are not an agent taking a turn on the platform.
+_NOT_A_TURN = ("sign_up", "interview")
+
+
 def _blind_activations(conn: sqlite3.Connection) -> Tuple[int, int]:
     """
     Return (blind_count, activation_count).
 
-    An activation is a (user_id, created_at) with a non-sign_up / non-refresh
-    action after the seed step. Blind = activation with no matching refresh.
+    An activation is one agent acting in one round, after the opening posts.
+    It is blind when the agent got no feed that round, either because building
+    it failed or because there was nothing to show. OASIS only records a
+    refresh that succeeded, so a missing refresh is the signal.
+
+    Rounds are found two ways, because the platforms stamp time differently:
+    - a step counter shared by a refresh and the actions after it, or
+    - wall-clock times. There, each round writes its refreshes together and
+      then its actions, so a refresh that follows an action starts a new round.
+
+    Matching refresh and action on the timestamp alone (the first version of
+    this check) counted every wall-clock turn as blind, opening posts included.
+    One limit of the wall-clock rule: a round in which every refresh failed
+    cannot be told apart from the round before it and is counted as sighted.
     """
     try:
-        activations = {
-            (int(r["user_id"]), str(r["created_at"]))
-            for r in conn.execute(
-                "SELECT user_id, created_at FROM trace "
-                "WHERE action NOT IN ('sign_up', 'refresh') AND created_at <> '0'"
-            )
-        }
-        refreshes = {
-            (int(r["user_id"]), str(r["created_at"]))
-            for r in conn.execute(
-                "SELECT user_id, created_at FROM trace WHERE action = 'refresh'"
-            )
-        }
+        rows = conn.execute(
+            "SELECT rowid AS rid, user_id, created_at, action FROM trace "
+            f"WHERE action NOT IN ({','.join('?' * len(_NOT_A_TURN))}) ORDER BY rowid",
+            _NOT_A_TURN,
+        ).fetchall()
     except sqlite3.Error:
         return 0, 0
-    blind = activations - refreshes
-    return len(blind), len(activations)
+
+    first_refresh = next((r["rid"] for r in rows if r["action"] == "refresh"), None)
+    acted: Dict[Any, set] = defaultdict(set)
+    refreshed: Dict[Any, set] = defaultdict(set)
+    segment = 0
+    prev_was_refresh = False
+    for r in rows:
+        stamp = str(r["created_at"])
+        is_refresh = r["action"] == "refresh"
+        if is_refresh and not prev_was_refresh:
+            segment += 1
+        prev_was_refresh = is_refresh
+        round_key = ("step", stamp) if stamp.isdigit() else ("segment", segment)
+        user = int(r["user_id"])
+        if is_refresh:
+            refreshed[round_key].add(user)
+        # Opening posts are placed by the runner, not chosen by an agent.
+        elif stamp != "0" and (first_refresh is None or r["rid"] > first_refresh or stamp.isdigit()):
+            acted[round_key].add(user)
+    activations = sum(len(users) for users in acted.values())
+    blind = sum(len(users - refreshed[key]) for key, users in acted.items())
+    return blind, activations
 
 
 def _exposure_slot_counts(conn: sqlite3.Connection) -> Dict[int, int]:
