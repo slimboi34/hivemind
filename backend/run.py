@@ -1,5 +1,5 @@
 """
-MiroFish Backend 启动入口
+Hivemind Backend 启动入口
 """
 
 import os

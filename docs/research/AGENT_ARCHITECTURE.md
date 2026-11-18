@@ -15,7 +15,7 @@ Evidence: the code at `dd6ec98`, and the two stored runs `sim_168d7ecb477b` (74 
 
 ## 0. Summary
 
-The engine inherited from MiroFish casts one agent for every named thing in the knowledge
+The engine as inherited casts one agent for every named thing in the knowledge
 graph and hands each a long written persona. That is the whole population model. It has three
 consequences that matter more than anything else here:
 

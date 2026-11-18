@@ -16,7 +16,7 @@ from ..services.godseye_seed import SECTION_KEYS, AreaError, build_brief, sugges
 from ..utils.locale import t
 from ..utils.logger import get_logger
 
-logger = get_logger('mirofish.api.godseye')
+logger = get_logger('hivemind.api.godseye')
 
 STATUS_TIMEOUT_S = 10.0
 

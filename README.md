@@ -128,12 +128,13 @@ docs/       BRAND.md (how the kit is applied in the product) and screenshots
 ```
 
 See [docs/BRAND.md](./docs/BRAND.md) for colours, type, the product nav and the voice, and
-[HIVEMIND.md](./HIVEMIND.md) for working notes on this fork.
+[HIVEMIND.md](./HIVEMIND.md) for working notes.
 
-## Credits & license
+## Licence
 
-Hivemind is built on [MiroFish](https://github.com/666ghj/MiroFish) by 666ghj and
-contributors. Agent simulation is powered by [CAMEL-AI OASIS](https://github.com/camel-ai/oasis).
+Licensed under the [GNU AGPL-3.0](./LICENSE). If you run a modified version as a network
+service, you must offer its source to your users.
 
-Licensed under the [GNU AGPL-3.0](./LICENSE), the same licence as MiroFish. If you run a
-modified version as a network service, you must offer its source to your users.
+Portions of this software derive from an open-source project released under the same
+licence; this notice is kept as that licence requires. Agent simulation is powered by
+[CAMEL-AI OASIS](https://github.com/camel-ai/oasis).

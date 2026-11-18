@@ -4,14 +4,9 @@
 it researches the topic, deploys a swarm of AI agents as the people and organisations
 involved, runs them on simulated social platforms, and reports how they react.
 
-Our working copy of **MiroFish** (official repo: https://github.com/666ghj/MiroFish,
-mirofish.ai), a swarm-intelligence "predict anything" engine. Step 1 is running it
-unchanged; step 2 is re-engineering it into Hivemind.
-
-- Git remote `upstream` = the official MiroFish repo. Pull its updates with
-  `git fetch upstream && git merge upstream/main`.
-- License: **AGPL-3.0**. Anything we build from this code stays AGPL. If we ever run it
-  as a public web service, we must offer users the source.
+- License: **AGPL-3.0**. Part of this code derives from an AGPL project, so everything built
+  from it stays AGPL, the LICENSE file and the short notice in the README must stay, and if
+  it is ever run as a public web service users must be offered the source.
 
 ## Run it
 
@@ -37,7 +32,7 @@ and a Vue 3 + Vite frontend (`frontend/`).
 
 ## What Hivemind adds
 
-Rule: new features read the outputs MiroFish already produces and never change the
+Rule: measurement features read the outputs a run already produces and never change the
 prediction pipeline (ontology, personas, OASIS run, report agent), so forecasts stay
 identical to upstream.
 
