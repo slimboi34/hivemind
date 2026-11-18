@@ -13,9 +13,9 @@
         <span class="hm-pill__dot"></span>{{ statusText }}
       </span>
       <button class="hm-btn hm-btn--secondary hm-btn--sm" :disabled="loading" @click="load">{{ $t('analytics.refresh') }}</button>
-      <a class="hm-btn hm-btn--secondary hm-btn--sm" :href="pdfUrl" target="_blank" rel="noopener">
-        {{ $t('analytics.downloadPdf') }}
-      </a>
+      <button class="hm-btn hm-btn--secondary hm-btn--sm" :disabled="downloadingPdf" @click="downloadPdf">
+        {{ downloadingPdf ? $t('analytics.briefPreparingPdf') : $t('analytics.downloadPdf') }}
+      </button>
       <button class="hm-btn hm-btn--secondary hm-btn--sm" @click="router.push({ name: 'SimulationRun', params: { simulationId } })">
         ← {{ $t('analytics.backToSimulation') }}
       </button>
@@ -25,7 +25,19 @@
       <p v-if="error" class="banner error">{{ $t('analytics.loadFailed', { error }) }}</p>
       <p v-if="!data && loading" class="banner">{{ $t('analytics.loading') }}</p>
 
+      <p v-if="pdfError" class="banner error">{{ $t('analytics.briefPdfFailed', { error: pdfError }) }}</p>
+
       <template v-if="data">
+        <Briefing
+          :briefing="briefing"
+          :writing="writingBriefing"
+          :write-error="briefingError"
+          :downloading="downloadingPdf"
+          v-model:selected="selected"
+          @write="writeBriefing"
+          @download="downloadPdf"
+        />
+
         <WhatHappened
           :recap="recap"
           :writing="writingRecap"
@@ -115,12 +127,15 @@ import HealthBadge from '../components/analytics/HealthBadge.vue'
 import CascadeForest from '../components/analytics/CascadeForest.vue'
 import BranchingPanel from '../components/analytics/BranchingPanel.vue'
 import WhatHappened from '../components/analytics/WhatHappened.vue'
+import Briefing from '../components/analytics/Briefing.vue'
 import {
   getSimulationAnalytics,
   getSimulationDynamics,
   getSimulationRecap,
   writeSimulationRecap,
-  consensusReportPdfUrl
+  getSimulationBriefing,
+  writeSimulationBriefing,
+  downloadBriefingPdf
 } from '../api/simulation'
 import { fmt, pct } from '../components/analytics/palette'
 
@@ -136,6 +151,12 @@ const recap = ref(null)
 const writingRecap = ref(false)
 const recapError = ref('')
 let autoWriteTried = false
+const briefing = ref(null)
+const writingBriefing = ref(false)
+const briefingError = ref('')
+let autoBriefTried = false
+const downloadingPdf = ref(false)
+const pdfError = ref('')
 const loading = ref(false)
 const error = ref('')
 const selected = ref(typeof route.query.agent === 'string' ? route.query.agent : null)
@@ -145,7 +166,6 @@ watch(selected, (name) => {
 let timer = null
 
 const t = computed(() => data.value?.totals || {})
-const pdfUrl = computed(() => consensusReportPdfUrl(props.simulationId))
 const isLive = computed(() => ['running', 'starting', 'stopping'].includes(data.value?.run?.status))
 const maxRound = computed(() => Math.max(0, (data.value?.rounds?.length || 1) - 1))
 const roundsDone = computed(() => {
@@ -171,16 +191,19 @@ const statusClass = computed(() => (isLive.value ? 'live' : t.value.actions ? 'd
 const load = async () => {
   loading.value = true
   try {
-    const [analyticsRes, dynamicsRes, recapRes] = await Promise.all([
+    const [analyticsRes, dynamicsRes, recapRes, briefingRes] = await Promise.all([
       getSimulationAnalytics(props.simulationId),
       getSimulationDynamics(props.simulationId).catch(() => null),
-      writingRecap.value ? Promise.resolve(null) : getSimulationRecap(props.simulationId).catch(() => null)
+      writingRecap.value ? Promise.resolve(null) : getSimulationRecap(props.simulationId).catch(() => null),
+      writingBriefing.value ? Promise.resolve(null) : getSimulationBriefing(props.simulationId).catch(() => null)
     ])
     data.value = analyticsRes.data
     dynamics.value = dynamicsRes?.data || null
     if (recapRes?.data) recap.value = recapRes.data
+    if (briefingRes?.data) briefing.value = briefingRes.data
     error.value = ''
     maybeAutoWrite()
+    maybeAutoBrief()
   } catch (e) {
     error.value = e.message || String(e)
   } finally {
@@ -196,6 +219,44 @@ const maybeAutoWrite = () => {
   if (autoWriteTried || !r || r.story_source === 'llm' || !r.can_write || !r.facts?.run?.finished) return
   autoWriteTried = true
   writeRecap(false)
+}
+
+// Same for the briefing: written once per finished run, then served from the cache.
+const maybeAutoBrief = () => {
+  const b = briefing.value
+  if (autoBriefTried || !b || b.reading_source === 'llm' || !b.can_write || !b.facts?.run?.finished) return
+  autoBriefTried = true
+  writeBriefing(false)
+}
+
+const writeBriefing = async (force = false) => {
+  if (writingBriefing.value) return
+  writingBriefing.value = true
+  briefingError.value = ''
+  try {
+    const res = await writeSimulationBriefing(props.simulationId, force)
+    briefing.value = res.data
+  } catch (e) {
+    briefingError.value = e.message || String(e)
+  } finally {
+    writingBriefing.value = false
+  }
+}
+
+// The PDF waits for the AI reading and story if they are not written yet, so
+// fetch it in the background and show progress instead of a dead-looking link.
+const downloadPdf = async () => {
+  if (downloadingPdf.value) return
+  downloadingPdf.value = true
+  pdfError.value = ''
+  try {
+    await downloadBriefingPdf(props.simulationId)
+    load()
+  } catch (e) {
+    pdfError.value = e.message || String(e)
+  } finally {
+    downloadingPdf.value = false
+  }
 }
 
 const writeRecap = async (force = false) => {

@@ -201,6 +201,6 @@ def test_recap_on_example_run_and_pdf_section():
     pdf = build_consensus_pdf(EXAMPLE_SIM)
     import fitz
 
-    text = fitz.open(stream=pdf)[0].get_text()
-    assert "1. What happened" in text
+    text = "".join(page.get_text() for page in fitz.open(stream=pdf))
+    assert "What happened" in text
     assert "How it started" in text

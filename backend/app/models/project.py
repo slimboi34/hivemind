@@ -288,6 +288,24 @@ class ProjectManager:
         }
     
     @classmethod
+    def save_text_to_project(cls, project_id: str, text: str, original_filename: str) -> Dict[str, str]:
+        """Save text that did not arrive as an upload (pasted notes, a generated brief)
+        as a project file. Same return shape as save_file_to_project."""
+        files_dir = cls._get_project_files_dir(project_id)
+        os.makedirs(files_dir, exist_ok=True)
+        ext = os.path.splitext(original_filename)[1].lower()
+        safe_filename = f"{uuid.uuid4().hex[:8]}{ext}"
+        file_path = os.path.join(files_dir, safe_filename)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(text)
+        return {
+            "original_filename": original_filename,
+            "saved_filename": safe_filename,
+            "path": file_path,
+            "size": os.path.getsize(file_path)
+        }
+
+    @classmethod
     def save_extracted_text(cls, project_id: str, text: str) -> None:
         """保存提取的文本"""
         text_path = cls._get_project_text_path(project_id)

@@ -2239,24 +2239,67 @@ def write_simulation_recap(simulation_id: str):
         }), 502
 
 
+@simulation_bp.route('/<simulation_id>/briefing', methods=['GET'])
+def get_simulation_briefing(simulation_id: str):
+    """
+    Hivemind briefing: what the run means. Group and company facts plus the
+    best reading available without an LLM call (a cached AI-written reading
+    for the same data, otherwise a template). Read-only.
+    """
+    try:
+        from ..services.run_briefing import get_briefing
+
+        return jsonify({"success": True, "data": get_briefing(simulation_id)})
+    except Exception as e:
+        logger.error(f"Failed to build briefing: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
+@simulation_bp.route('/<simulation_id>/briefing', methods=['POST'])
+def write_simulation_briefing(simulation_id: str):
+    """
+    Have the LLM write the briefing (bottom line, consensus, splits, group and
+    company reactions) from the run's facts and cache it. Body: {"force": true}
+    rewrites even when a reading for the same data is cached.
+    """
+    try:
+        from ..services.run_briefing import write_briefing
+
+        body = request.get_json(silent=True) or {}
+        data = write_briefing(simulation_id, force=bool(body.get("force")))
+        return jsonify({"success": True, "data": data})
+    except Exception as e:
+        logger.error(f"Failed to write briefing: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": f"Could not write the briefing: {str(e)}",
+        }), 502
+
+
 @simulation_bp.route('/<simulation_id>/consensus-report.pdf', methods=['GET'])
 def download_consensus_report_pdf(simulation_id: str):
     """
-    Deterministic PDF: health, branching, orphans, top cascades and
-    engagement consensus for this run. Optional excerpt of the prediction
-    report when one exists on disk.
+    The briefing PDF: bottom line, consensus, splits, group and company
+    reactions, the story of the run, then run diagnostics as an appendix.
+    ?write=1 has the LLM write the reading and the story first if the run has
+    finished and they are not cached yet (slower on the first download).
     """
     try:
         from flask import send_file
         from ..services.consensus_report import build_consensus_pdf
         import io
 
-        pdf_bytes = build_consensus_pdf(simulation_id)
+        write = request.args.get("write", "").lower() in ("1", "true", "yes")
+        pdf_bytes = build_consensus_pdf(simulation_id, write=write)
         return send_file(
             io.BytesIO(pdf_bytes),
             mimetype="application/pdf",
             as_attachment=True,
-            download_name=f"{simulation_id}-hivemind-report.pdf",
+            download_name=f"{simulation_id}-hivemind-briefing.pdf",
         )
     except Exception as e:
         logger.error(f"Failed to build consensus PDF: {str(e)}")

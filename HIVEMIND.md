@@ -55,8 +55,32 @@ identical to upstream.
   - cascade trees from the sqlite `trace` table (branching, orphans, structural virality)
   - run health card (blind activations, participation, feed concentration, horizon)
   - engagement consensus plain-language verdict
-  - **Report PDF** download button for a full end-of-run breakdown (starts with "What happened")
-- **What happened** (top of the Analytics page, first section of the Report PDF).
+  - these diagnostics are the appendix of the briefing PDF
+- **Briefing** (top of the Analytics page, and the first pages of the PDF).
+  `GET/POST /api/simulation/<id>/briefing` (`run_briefing.py`): what a run means.
+  - Facts are deterministic. Each simulated participant is placed in a reader-friendly group
+    (companies and executives, government and regulators, investors and analysts, media,
+    experts, public voices) by keyword-matching the entity type the run already gave them.
+    Each group gets counts, how warmly its posts were received, who backed whom, and verbatim posts.
+  - The LLM interprets only those facts: the bottom line, where groups agree, where they split,
+    how each group reacted and its likely next step, each company's position and likely move,
+    and what to watch. A template fills the same shape with no LLM.
+  - A deterministic "how far to trust this" level (Solid / Directional / Thin) comes from the
+    run-health checks and participation.
+  - Cached in `uploads/simulations/<id>/briefing.json`, keyed to the facts. Written once per
+    finished run when Analytics is opened or the PDF is downloaded.
+- **Briefing PDF** (`consensus_report.py`, **Download briefing PDF** on Analytics).
+  Order: bottom line, consensus, splits, group reactions, company reactions, what to watch,
+  the story of the run, then run diagnostics as an appendix. `?write=1` has the backend write
+  the AI reading and story first if they are missing.
+- **Start from a question alone** (`seed_brief.py`, home screen).
+  Evidence is optional. `POST /api/graph/ontology/generate` accepts uploaded files, pasted text
+  (`seed_text`), both, or neither. With neither, the LLM writes a background brief (situation,
+  named stakeholders by group, relationships, timeline, open questions) that becomes the seed
+  document. This does change the input to the prediction pipeline for those runs: the brief
+  comes from the model's general knowledge and can be out of date, and it says so at the top.
+  Runs that upload documents are unaffected.
+- **What happened** (Analytics page, and the story section of the PDF).
   `GET/POST /api/simulation/<id>/recap` (`run_recap.py`): a plain-language story of each run.
   - Facts are deterministic. Rounds are grouped into stretches (one per round for short runs,
     four stretches for longer ones, one per simulated day for multi-day runs). Each stretch

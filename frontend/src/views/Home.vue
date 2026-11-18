@@ -118,13 +118,48 @@
         <!-- 右栏：交互控制台 -->
         <div class="right-panel">
           <div class="console-box">
-            <!-- 上传区域 -->
+            <!-- 01: the question. It is the only thing a run needs. -->
             <div class="console-section">
               <div class="console-header">
-                <span class="console-label">{{ $t('home.realitySeed') }}</span>
-                <span class="console-meta">{{ $t('home.supportedFormats') }}</span>
+                <span class="console-label">{{ $t('home.simulationPrompt') }}</span>
               </div>
-              
+              <div class="input-wrapper">
+                <textarea
+                  v-model="formData.simulationRequirement"
+                  class="code-input"
+                  :placeholder="$t('home.promptPlaceholder')"
+                  rows="5"
+                  :disabled="loading"
+                ></textarea>
+                <div class="model-badge">{{ $t('home.engineBadge') }}</div>
+              </div>
+              <div v-if="!formData.simulationRequirement.trim()" class="examples">
+                <span class="examples-label">{{ $t('home.tryExample') }}</span>
+                <button
+                  v-for="(example, i) in $tm('home.examples')"
+                  :key="i"
+                  type="button"
+                  class="example-chip"
+                  @click="formData.simulationRequirement = $rt(example)"
+                >{{ $rt(example) }}</button>
+              </div>
+            </div>
+
+            <div class="console-divider">
+              <span>{{ $t('home.inputParams') }}</span>
+            </div>
+
+            <!-- 02: evidence, optional. Upload, paste, or pull a live brief. -->
+            <div class="console-section">
+              <div class="console-header">
+                <span class="console-label">{{ $t('home.realitySeed') }} <span class="optional">{{ $t('home.evidenceOptional') }}</span></span>
+                <span class="evidence-tabs" role="tablist">
+                  <button type="button" role="tab" :aria-selected="evidenceMode === 'upload'" :class="{ on: evidenceMode === 'upload' }" @click="evidenceMode = 'upload'">{{ $t('home.evidenceUpload') }}</button>
+                  <button type="button" role="tab" :aria-selected="evidenceMode === 'paste'" :class="{ on: evidenceMode === 'paste' }" @click="evidenceMode = 'paste'">{{ $t('home.evidencePaste') }}</button>
+                </span>
+              </div>
+
+              <template v-if="evidenceMode === 'upload'">
               <div 
                 class="upload-zone"
                 :class="{ 'drag-over': isDragOver, 'has-files': files.length > 0 }"
@@ -157,29 +192,22 @@
                   </div>
                 </div>
               </div>
-              <GodsEyeImport @add-file="file => addFiles([file])" />
-            </div>
-
-            <!-- 分割线 -->
-            <div class="console-divider">
-              <span>{{ $t('home.inputParams') }}</span>
-            </div>
-
-            <!-- 输入区域 -->
-            <div class="console-section">
-              <div class="console-header">
-                <span class="console-label">{{ $t('home.simulationPrompt') }}</span>
-              </div>
-              <div class="input-wrapper">
+              </template>
+              <div v-else class="input-wrapper">
                 <textarea
-                  v-model="formData.simulationRequirement"
+                  v-model="formData.seedText"
                   class="code-input"
-                  :placeholder="$t('home.promptPlaceholder')"
+                  :placeholder="$t('home.pastePlaceholder')"
                   rows="6"
                   :disabled="loading"
                 ></textarea>
-                <div class="model-badge">{{ $t('home.engineBadge') }}</div>
               </div>
+              <GodsEyeImport @add-file="file => addFiles([file])" />
+
+              <p class="evidence-note" :class="{ ready: hasEvidence }">
+                <template v-if="hasEvidence">{{ $t('home.evidenceReady') }}</template>
+                <template v-else><strong>{{ $t('home.noEvidenceTitle') }}</strong> {{ $t('home.noEvidenceNote') }}</template>
+              </p>
             </div>
 
             <!-- 启动按钮 -->
@@ -216,8 +244,13 @@ const router = useRouter()
 
 // 表单数据
 const formData = ref({
-  simulationRequirement: ''
+  simulationRequirement: '',
+  seedText: ''
 })
+
+// How evidence is being added: 'upload' (files) or 'paste' (text). Both are kept
+// if the user fills in both; neither is required.
+const evidenceMode = ref('upload')
 
 // 文件列表
 const files = ref([])
@@ -231,9 +264,9 @@ const isDragOver = ref(false)
 const fileInput = ref(null)
 
 // 计算属性:是否可以提交
-const canSubmit = computed(() => {
-  return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
-})
+// Only the question is required. With no evidence the backend writes a background brief.
+const canSubmit = computed(() => formData.value.simulationRequirement.trim() !== '')
+const hasEvidence = computed(() => files.value.length > 0 || formData.value.seedText.trim() !== '')
 
 // 触发文件选择
 const triggerFileInput = () => {
@@ -295,7 +328,7 @@ const startSimulation = () => {
   
   // 存储待上传的数据
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
-    setPendingUpload(files.value, formData.value.simulationRequirement)
+    setPendingUpload(files.value, formData.value.simulationRequirement, formData.value.seedText.trim())
     
     // 立即跳转到Process页面（使用特殊标识表示新建项目）
     router.push({
@@ -768,6 +801,93 @@ const startSimulation = () => {
 .remove-btn:hover {
   background: var(--hm-surface-3);
   color: var(--hm-ink);
+}
+
+.optional {
+  margin-left: var(--hm-space-2);
+  padding: 1px 6px;
+  border: 1px solid var(--hm-line-strong);
+  border-radius: var(--hm-radius-sm);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--hm-ink-4);
+}
+
+.examples {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: var(--hm-space-3);
+}
+
+.examples-label {
+  font-family: var(--hm-font-mono);
+  font-size: var(--hm-text-2xs);
+  letter-spacing: var(--hm-tracking-label);
+  text-transform: uppercase;
+  color: var(--hm-ink-4);
+}
+
+.example-chip {
+  padding: 6px 10px;
+  border: 1px solid var(--hm-line);
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-surface-2);
+  color: var(--hm-ink-3);
+  font: inherit;
+  font-size: var(--hm-text-xs);
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--hm-duration-fast) var(--hm-ease), color var(--hm-duration-fast) var(--hm-ease);
+}
+
+.example-chip:hover {
+  border-color: var(--hm-ink-5);
+  color: var(--hm-ink);
+}
+
+.evidence-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--hm-surface-3);
+  border-radius: var(--hm-radius-md);
+}
+
+.evidence-tabs button {
+  height: 24px;
+  padding: 0 var(--hm-space-3);
+  border: none;
+  border-radius: var(--hm-radius-sm);
+  background: transparent;
+  color: var(--hm-ink-3);
+  font: inherit;
+  font-size: var(--hm-text-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.evidence-tabs button.on {
+  background: var(--hm-surface);
+  color: var(--hm-ink);
+  box-shadow: var(--hm-shadow-xs);
+}
+
+.evidence-note {
+  margin: var(--hm-space-3) 0 0;
+  padding: var(--hm-space-3);
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-signal-soft);
+  color: var(--hm-signal-ink);
+  font-size: var(--hm-text-xs);
+  line-height: 1.5;
+}
+
+.evidence-note.ready {
+  background: var(--hm-surface-2);
+  color: var(--hm-ink-3);
 }
 
 .console-divider {

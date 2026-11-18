@@ -182,21 +182,27 @@ const initProject = async () => {
 
 const handleNewProject = async () => {
   const pending = getPendingUpload()
-  if (!pending.isPending || pending.files.length === 0) {
-    error.value = 'No pending files found.'
-    addLog('Error: No pending files found for new project.')
+  if (!pending.isPending || !pending.simulationRequirement) {
+    error.value = 'Nothing to run. Go back to the home page and ask a question.'
+    addLog('Error: No pending question found for new project.')
     return
   }
+  const hasEvidence = pending.files.length > 0 || !!pending.seedText
   
   try {
     loading.value = true
     currentPhase.value = 0
-    ontologyProgress.value = { message: 'Uploading and analyzing docs...' }
-    addLog('Starting ontology generation: Uploading files...')
+    ontologyProgress.value = {
+      message: hasEvidence ? 'Uploading and analyzing docs...' : 'Writing a background brief from your question...'
+    }
+    addLog(hasEvidence
+      ? 'Starting ontology generation: Uploading files...'
+      : 'No evidence supplied: writing a background brief from the question...')
     
     const formData = new FormData()
     pending.files.forEach(f => formData.append('files', f))
     formData.append('simulation_requirement', pending.simulationRequirement)
+    if (pending.seedText) formData.append('seed_text', pending.seedText)
     
     const res = await generateOntology(formData)
     if (res.success) {
@@ -207,6 +213,9 @@ const handleNewProject = async () => {
       router.replace({ name: 'Process', params: { projectId: res.data.project_id } })
       ontologyProgress.value = null
       addLog(`Ontology generated successfully for project ${res.data.project_id}`)
+      if (res.data.seed_source === 'brief') {
+        addLog('Seed: background brief written by Hivemind from the question (model knowledge, may be out of date).')
+      }
       await startBuildGraph()
     } else {
       error.value = res.error || 'Ontology generation failed'

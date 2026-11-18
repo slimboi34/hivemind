@@ -188,12 +188,51 @@ export const writeSimulationRecap = (simulationId, force = false) => {
 }
 
 /**
- * Absolute URL for the consensus PDF download (browser navigation / <a download>)
+ * Briefing: group and company facts plus the best reading available without an LLM call
  * @param {string} simulationId
  */
-export const consensusReportPdfUrl = (simulationId) => {
+export const getSimulationBriefing = (simulationId) => {
+  return service.get(`/api/simulation/${simulationId}/briefing`)
+}
+
+/**
+ * Have the AI write (or, with force, rewrite) the briefing and cache it
+ * @param {string} simulationId
+ * @param {boolean} force
+ */
+export const writeSimulationBriefing = (simulationId, force = false) => {
+  return service.post(`/api/simulation/${simulationId}/briefing`, { force })
+}
+
+/**
+ * Absolute URL for the briefing PDF. write=true has the backend write the AI
+ * reading and story first if they are missing (slow the first time, then cached).
+ * @param {string} simulationId
+ * @param {boolean} write
+ */
+export const consensusReportPdfUrl = (simulationId, write = false) => {
   const base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001').replace(/\/$/, '')
-  return `${base}/api/simulation/${simulationId}/consensus-report.pdf`
+  return `${base}/api/simulation/${simulationId}/consensus-report.pdf${write ? '?write=1' : ''}`
+}
+
+/**
+ * Fetch the briefing PDF and hand it to the browser as a download.
+ * @param {string} simulationId
+ */
+export const downloadBriefingPdf = async (simulationId) => {
+  const res = await fetch(consensusReportPdfUrl(simulationId, true))
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.error || `HTTP ${res.status}`)
+  }
+  const url = URL.createObjectURL(await res.blob())
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${simulationId}-hivemind-briefing.pdf`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 10000)
 }
 
 /**

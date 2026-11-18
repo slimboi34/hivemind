@@ -16,6 +16,7 @@ from ..config import Config
 from ..services.ontology_generator import OntologyGenerator
 from ..services.graph_builder import BatchSubmission, GraphBuilderService
 from ..services.text_processor import TextProcessor
+from ..services.seed_brief import BRIEF_FILENAME, PASTED_FILENAME, write_seed_brief
 from ..utils.file_parser import FileParser
 from ..utils.logger import get_logger
 from ..utils.locale import t, get_locale, set_locale
@@ -308,13 +309,10 @@ def generate_ontology():
                 "error": t('api.requireSimulationRequirement')
             }), 400
         
-        # 获取上传的文件
-        uploaded_files = request.files.getlist('files')
-        if not uploaded_files or all(not f.filename for f in uploaded_files):
-            return jsonify({
-                "success": False,
-                "error": t('api.requireFileUpload')
-            }), 400
+        # Evidence is optional. A run can start from uploaded files, pasted
+        # text, both, or the question alone (Hivemind then writes a brief).
+        uploaded_files = [f for f in request.files.getlist('files') if f and f.filename]
+        seed_text = (request.form.get('seed_text') or '').strip()
         
         # 创建项目
         project = ProjectManager.create_project(name=project_name)
@@ -344,12 +342,31 @@ def generate_ontology():
                 document_texts.append(text)
                 all_text += f"\n\n=== {file_info['original_filename']} ===\n{text}"
         
+        def add_text_source(text, filename):
+            nonlocal all_text
+            info = ProjectManager.save_text_to_project(project.project_id, text, filename)
+            project.files.append({"filename": info["original_filename"], "size": info["size"]})
+            clean = TextProcessor.preprocess_text(text)
+            document_texts.append(clean)
+            all_text += f"\n\n=== {info['original_filename']} ===\n{clean}"
+
+        seed_source = "documents"
+        if seed_text:
+            add_text_source(seed_text, PASTED_FILENAME)
+            seed_source = "documents" if len(document_texts) > 1 else "pasted"
+
         if not document_texts:
-            ProjectManager.delete_project(project.project_id)
-            return jsonify({
-                "success": False,
-                "error": t('api.noDocProcessed')
-            }), 400
+            if uploaded_files:
+                # Files were sent but none could be read: say so rather than
+                # quietly running on a generated brief instead.
+                ProjectManager.delete_project(project.project_id)
+                return jsonify({
+                    "success": False,
+                    "error": t('api.noDocProcessed')
+                }), 400
+            logger.info("No evidence supplied; writing a background brief from the question")
+            add_text_source(write_seed_brief(simulation_requirement), BRIEF_FILENAME)
+            seed_source = "brief"
         
         # 保存提取的文本
         project.total_text_length = len(all_text)
@@ -387,7 +404,8 @@ def generate_ontology():
                 "ontology": project.ontology,
                 "analysis_summary": project.analysis_summary,
                 "files": project.files,
-                "total_text_length": project.total_text_length
+                "total_text_length": project.total_text_length,
+                "seed_source": seed_source
             }
         })
         

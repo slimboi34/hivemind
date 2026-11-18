@@ -5,7 +5,7 @@
   <img src="./brand/logo.svg" alt="Hivemind" width="360">
 </picture>
 
-**Swarm forecasting. Upload the evidence, rehearse the reaction.**
+**Swarm forecasting. Ask the question, rehearse the reaction.**
 
 [English](./README.md) | [中文文档](./README-ZH.md)
 
@@ -36,6 +36,24 @@ announcement, a policy or a crisis before it happens.
 | --- | --- |
 | ![Knowledge graph](./docs/images/graph.png) | ![Simulation](./docs/images/simulation.png) |
 | ![Report](./docs/images/report.png) | ![Interaction](./docs/images/interaction.png) |
+
+### Start from a question
+
+Only the question is required. Add evidence by uploading files, pasting text or pulling a live
+brief, or add none: Hivemind then writes a background brief from what the model already knows
+and uses that as the seed. That brief can be out of date, so add documents for anything recent
+or private.
+
+### The briefing
+
+When a run finishes, the Analytics page opens with a plain-language briefing, and **Download
+briefing PDF** gives you the same thing as a document to share:
+
+- the bottom line, and how far to trust it
+- where the simulated voices agree, and where they split
+- how each group reacted (companies, government, investors, media, the public) and what it would likely do next
+- each company's position and likely move
+- what to watch, the story of the run, and run diagnostics as an appendix
 
 ### Simulation analytics
 
