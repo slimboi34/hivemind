@@ -94,6 +94,11 @@ identical to upstream.
 
 ## Re-engineering candidates
 
+The full review of how agents are created and how the system is put together, with a ranked
+plan, is in [docs/research/AGENT_ARCHITECTURE.md](docs/research/AGENT_ARCHITECTURE.md). How
+information spreads between agents is in
+[docs/research/INFORMATION_DYNAMICS.md](docs/research/INFORMATION_DYNAMICS.md).
+
 - **Drop the Zep Cloud dependency.** It is the one hard external service. Replace it with a
   local graph (SQLite or Kuzu) so Hivemind runs on just an LLM key.
 - **Native Claude support.** It currently goes through Anthropic's OpenAI-compatible endpoint.

@@ -20,6 +20,7 @@ from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.locale import get_language_instruction, get_locale, set_locale, t
 from ..utils.openai_chat_compat import create_chat_completion, extract_chat_completion_text
+from ..utils.llm_client import _clean_chat_text
 from ..utils.zep import (
     call_zep_read_with_retry,
     get_zep_client,
@@ -529,9 +530,24 @@ class OasisProfileGenerator:
         
         return "\n\n".join(context_parts)
     
+    # Entity types are designed per project by the ontology step, so they are
+    # rarely one of the fixed names above ("GovernmentOfficial", "NvidiaExecutive").
+    # A type names a human being when its head noun does: the last word of the
+    # PascalCase name. "GovernmentOfficial" is a person, "GovernmentAgency" is not.
+    INDIVIDUAL_TYPE_HEADS = (
+        "person", "figure", "official", "politician", "executive", "analyst", "investor",
+        "influencer", "journalist", "reporter", "student", "alumni", "alumnus", "professor",
+        "expert", "faculty", "activist", "citizen", "employee", "worker", "founder", "ceo",
+        "leader", "celebrity", "artist", "author", "scientist", "researcher", "lawyer",
+        "doctor", "teacher", "customer", "consumer", "user", "voter", "resident", "member",
+        "individual", "senator", "lawmaker", "legislator", "minister", "president",
+        "commentator", "creator", "trader", "shareholder", "player", "athlete", "critic",
+    )
+
     def _is_individual_entity(self, entity_type: str) -> bool:
-        """判断是否是个人类型实体"""
-        return entity_type.lower() in self.INDIVIDUAL_ENTITY_TYPES
+        """Whether this entity type describes one human being (not an organisation)."""
+        t = (entity_type or "").strip().lower()
+        return t in self.INDIVIDUAL_ENTITY_TYPES or t.endswith(self.INDIVIDUAL_TYPE_HEADS)
     
     def _is_group_entity(self, entity_type: str) -> bool:
         """判断是否是群体/机构类型实体"""
@@ -582,7 +598,8 @@ class OasisProfileGenerator:
                     # 不设置max_tokens，让LLM自由发挥
                 )
                 
-                content = extract_chat_completion_text(response)
+                # Models often wrap JSON in a Markdown fence even in JSON mode; parse what is inside it.
+                content = _clean_chat_text(extract_chat_completion_text(response))
                 
                 # 检查是否被截断（finish_reason不是'stop'）
                 finish_reason = response.choices[0].finish_reason
@@ -755,7 +772,7 @@ class OasisProfileGenerator:
 3. age: 年龄数字（必须是整数）
 4. gender: 性别，必须是英文: "male" 或 "female"
 5. mbti: MBTI类型（如INTJ、ENFP等）
-6. country: 国家（使用中文，如"中国"）
+6. country: 国家名称
 7. profession: 职业
 8. interested_topics: 感兴趣话题数组
 
@@ -765,6 +782,7 @@ class OasisProfileGenerator:
 - {get_language_instruction()} (gender字段必须用英文male/female)
 - 内容要与实体信息保持一致
 - age必须是有效的整数，gender必须是"male"或"female"
+- 例外：如果该实体实际上是一个机构、公司或一群人（而不是某一个具体的人），请把它写成该机构/群体的官方账号，此时 age 填 30，gender 填 "other"
 """
 
     def _build_group_persona_prompt(
@@ -804,7 +822,7 @@ class OasisProfileGenerator:
 3. age: 固定填30（机构账号的虚拟年龄）
 4. gender: 固定填"other"（机构账号使用other表示非个人）
 5. mbti: MBTI类型，用于描述账号风格，如ISTJ代表严谨保守
-6. country: 国家（使用中文，如"中国"）
+6. country: 国家名称
 7. profession: 机构职能描述
 8. interested_topics: 关注领域数组
 

@@ -22,6 +22,7 @@ from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.locale import get_language_instruction, t
 from ..utils.openai_chat_compat import create_chat_completion, extract_chat_completion_text
+from ..utils.llm_client import _clean_chat_text
 from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger('mirofish.simulation_config')
@@ -215,6 +216,7 @@ class SimulationConfigGenerator:
     MAX_CONTEXT_LENGTH = 50000
     # 每批生成的Agent数量
     AGENTS_PER_BATCH = 15
+    EVENT_ROSTER_LIMIT = 150  # accounts listed by name when writing the opening posts
     
     # 各步骤的上下文截断长度（字符数）
     TIME_CONFIG_CONTEXT_LENGTH = 10000   # 时间配置
@@ -453,7 +455,8 @@ class SimulationConfigGenerator:
                     # 不设置max_tokens，让LLM自由发挥
                 )
                 
-                content = extract_chat_completion_text(response)
+                # Models often wrap JSON in a Markdown fence even in JSON mode; parse what is inside it.
+                content = _clean_chat_text(extract_chat_completion_text(response))
                 finish_reason = response.choices[0].finish_reason
                 
                 # 检查是否被截断
@@ -671,6 +674,14 @@ class SimulationConfigGenerator:
             f"- {t}: {', '.join(examples)}" 
             for t, examples in type_examples.items()
         ])
+
+        # The full cast by name, so each opening post can be given to the
+        # account that would really post it (not just to "some account of
+        # that type", which put one politician's words in another's mouth).
+        roster = "\n".join(
+            f"- {e.name} ({e.get_entity_type() or 'Unknown'})"
+            for e in entities[:self.EVENT_ROSTER_LIMIT]
+        )
         
         # 使用配置的上下文截断长度
         context_truncated = context[:self.EVENT_CONFIG_CONTEXT_LENGTH]
@@ -684,11 +695,15 @@ class SimulationConfigGenerator:
 ## 可用实体类型及示例
 {type_info}
 
+## 可发帖的账号（poster_name 必须从这里原样选择）
+{roster}
+
 ## 任务
 请生成事件配置JSON：
 - 提取热点话题关键词
 - 描述舆论发展方向
-- 设计初始帖子内容，**每个帖子必须指定 poster_type（发布者类型）**
+- 设计初始帖子内容，**每个帖子必须指定 poster_name（发布者账号名称）和 poster_type（发布者类型）**
+- 每条帖子必须以其发布者本人的口吻撰写，只能是该账号自己会发布的内容。报道他人言行的内容应由媒体账号发布，不能安排给另一位当事人。
 
 **重要**: poster_type 必须从上面的"可用实体类型"中选择，这样初始帖子才能分配给合适的 Agent 发布。
 例如：官方声明应由 Official/University 类型发布，新闻由 MediaOutlet 发布，学生观点由 Student 发布。
@@ -698,14 +713,14 @@ class SimulationConfigGenerator:
     "hot_topics": ["关键词1", "关键词2", ...],
     "narrative_direction": "<舆论发展方向描述>",
     "initial_posts": [
-        {{"content": "帖子内容", "poster_type": "实体类型（必须从可用类型中选择）"}},
+        {{"content": "帖子内容", "poster_name": "账号名称（必须从上面的账号列表中原样选择）", "poster_type": "该账号的实体类型"}},
         ...
     ],
     "reasoning": "<简要说明>"
 }}"""
 
         system_prompt = "你是舆论分析专家。返回纯JSON格式。注意 poster_type 必须精确匹配可用实体类型。"
-        system_prompt = f"{system_prompt}\n\n{get_language_instruction()}\nIMPORTANT: The 'poster_type' field value MUST be in English PascalCase exactly matching the available entity types. Only 'content', 'narrative_direction', 'hot_topics' and 'reasoning' fields should use the specified language."
+        system_prompt = f"{system_prompt}\n\n{get_language_instruction()}\nIMPORTANT: The 'poster_type' field value MUST be in English PascalCase exactly matching the available entity types. The 'poster_name' field value MUST be copied exactly from the account list. Only 'content', 'narrative_direction', 'hot_topics' and 'reasoning' fields should use the specified language."
 
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -735,7 +750,8 @@ class SimulationConfigGenerator:
         """
         为初始帖子分配合适的发布者 Agent
         
-        根据每个帖子的 poster_type 匹配最合适的 agent_id
+        A post that names its poster (poster_name) goes to that account.
+        Otherwise it falls back to poster_type: the next account of that type.
         """
         if not event_config.initial_posts:
             return event_config
@@ -762,17 +778,27 @@ class SimulationConfigGenerator:
         
         # 记录每种类型已使用的 agent 索引，避免重复使用同一个 agent
         used_indices: Dict[str, int] = {}
+        agents_by_name = {
+            " ".join(agent.entity_name.lower().split()): agent for agent in agent_configs
+        }
         
         updated_posts = []
         for post in event_config.initial_posts:
-            poster_type = post.get("poster_type", "").lower()
+            poster_type = str(post.get("poster_type") or "").lower()
+            poster_name = " ".join(str(post.get("poster_name") or "").lower().split())
             content = post.get("content", "")
             
             # 尝试找到匹配的 agent
             matched_agent_id = None
+            matched_by = "type"
             
+            # 0. The named account, if the model named one that exists
+            named = agents_by_name.get(poster_name) if poster_name else None
+            if named is not None:
+                matched_agent_id = named.agent_id
+                matched_by = "name"
             # 1. 直接匹配
-            if poster_type in agents_by_type:
+            elif poster_type in agents_by_type:
                 agents = agents_by_type[poster_type]
                 idx = used_indices.get(poster_type, 0) % len(agents)
                 matched_agent_id = agents[idx].agent_id
@@ -800,11 +826,14 @@ class SimulationConfigGenerator:
                     matched_agent_id = sorted_agents[0].agent_id
                 else:
                     matched_agent_id = 0
+                matched_by = "fallback"
             
             updated_posts.append({
                 "content": content,
                 "poster_type": post.get("poster_type", "Unknown"),
-                "poster_agent_id": matched_agent_id
+                "poster_name": post.get("poster_name", ""),
+                "poster_agent_id": matched_agent_id,
+                "matched_by": matched_by
             })
             
             logger.info(f"初始帖子分配: poster_type='{poster_type}' -> agent_id={matched_agent_id}")
