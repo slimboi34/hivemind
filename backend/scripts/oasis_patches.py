@@ -16,6 +16,15 @@ Fixes:
 2. Feed failures are silent. Platform.refresh returns the error to the agent
    and logs nothing. It now also prints one "[feed-error]" line, which lands
    in the run's simulation.log.
+3. The Twitter recommender embeds everything in one batch. Every round it runs
+   all user profiles and posts (up to 1,000 texts of up to 512 tokens) through
+   twhin-bert in a single forward pass. Attention memory grows with the post
+   count: by round 6 of a 52-agent run one process held 6.8 GB and swapped to
+   a standstill, and on a container it would be killed. Embeddings are the
+   [CLS] pooler output under an attention mask, so they do not depend on what
+   else is in the batch; encoding in batches of HIVEMIND_EMBED_BATCH (default
+   32) gives the same vectors with a fraction of the memory. Recommendations,
+   and so forecasts, are unchanged.
 """
 
 from __future__ import annotations
@@ -77,10 +86,35 @@ def _patch_refresh_logging() -> str:
     return "feed-error logging: applied"
 
 
+def _patch_embedding_batch() -> str:
+    import os
+    from oasis.social_platform import recsys
+
+    original = getattr(recsys, 'generate_post_vector', None)
+    if original is None:
+        return 'embedding batch: skipped (recsys.generate_post_vector not found)'
+    if getattr(original, '_hivemind_batched', False):
+        return 'embedding batch: already applied'
+    params = list(inspect.signature(original).parameters)
+    if params[:4] != ['model', 'tokenizer', 'texts', 'batch_size']:
+        return f'embedding batch: skipped (unexpected signature {params})'
+    try:
+        cap = max(1, int(os.environ.get('HIVEMIND_EMBED_BATCH', '32')))
+    except ValueError:
+        cap = 32
+
+    def generate_post_vector(model, tokenizer, texts, batch_size):
+        return original(model, tokenizer, texts, min(batch_size, cap))
+
+    generate_post_vector._hivemind_batched = True
+    recsys.generate_post_vector = generate_post_vector
+    return f'embedding batch: twhin-bert encodes {cap} texts at a time'
+
+
 def apply() -> List[str]:
     """Apply every fix. Never raises: a patch that cannot apply says so instead."""
     notes = []
-    for patch in (_patch_quote_feed, _patch_refresh_logging):
+    for patch in (_patch_quote_feed, _patch_refresh_logging, _patch_embedding_batch):
         try:
             notes.append(patch())
         except Exception as error:  # a broken patch must not stop a run
