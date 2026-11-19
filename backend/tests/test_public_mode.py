@@ -21,6 +21,7 @@ def client(monkeypatch, tmp_path):
     monkeypatch.setenv('HIVEMIND_RUNS_PER_DAY', '2')
     monkeypatch.setenv('HIVEMIND_RUNS_PER_VISITOR', '1')
     monkeypatch.setenv('HIVEMIND_CHATS_PER_VISITOR', '3')
+    monkeypatch.setenv('HIVEMIND_ADMIN_TOKEN', 'owner-token')
     monkeypatch.setattr(public_mode, '_QUOTA_PATH', str(tmp_path / 'public_quota.json'))
     monkeypatch.setattr(public_mode.Config, 'OASIS_SIMULATION_DATA_DIR', str(sims))
     monkeypatch.setattr(public_mode, '_simulation_running', lambda: False)
@@ -96,3 +97,14 @@ def test_reads_are_always_allowed(client):
     assert client.get('/api/simulation/history').status_code == LET_THROUGH
     status = client.get('/api/public/status', headers=visitor('6.6.6.6')).get_json()['data']
     assert status['public'] is True and status['runs_left_today'] == 2 and status['visitor_runs_left_today'] == 1
+
+
+def test_owner_can_give_todays_runs_back(client):
+    url = '/api/graph/ontology/generate'
+    assert client.post(url, headers=visitor('1.1.1.1')).status_code == LET_THROUGH
+    assert client.post(url, headers=visitor('1.1.1.1')).status_code == 429
+    assert client.post('/api/admin/quota/reset').status_code == 404  # hidden without the token
+    assert client.post(url, headers=visitor('1.1.1.1')).status_code == 429
+    res = client.post('/api/admin/quota/reset', headers={'X-Admin-Token': 'owner-token'})
+    assert res.status_code == 200 and res.get_json()['data']['cleared']['runs'] == 1
+    assert client.post(url, headers=visitor('1.1.1.1')).status_code == LET_THROUGH

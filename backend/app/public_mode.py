@@ -384,6 +384,19 @@ def register(app) -> None:
         return jsonify({'success': True, 'data': {'headers': seen, 'remote_addr': request.remote_addr,
                                                   'client_ip_used': client_ip()}})
 
+    @app.route('/api/admin/quota/reset', methods=['POST'])
+    def admin_quota_reset():
+        """Owner-only: give today's runs and questions back (e.g. after the owner's own test run)."""
+        if not token or request.headers.get('X-Admin-Token') != token:
+            return jsonify({'success': False, 'error': 'Not found'}), 404
+        with _lock:
+            data = _load()
+            before = dict(_day(data))
+            data['days'][_today()] = {}
+            _day(data)
+            _save(data)
+        return jsonify({'success': True, 'data': {'cleared': {'runs': before['runs'], 'chats': before['chats']}}})
+
     @app.route('/api/admin/import', methods=['POST'])
     def admin_import():
         """Unpack a tar.gz of projects/, simulations/ and reports/ into uploads (owner only)."""
