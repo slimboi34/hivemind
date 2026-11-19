@@ -10,6 +10,8 @@ Enabled with HIVEMIND_PUBLIC=1. Every rule here protects spend or shared history
 - Round count is capped at OASIS_DEFAULT_MAX_ROUNDS (enforced in the start endpoint).
 - Chat with agents or the report agent: HIVEMIND_CHATS_PER_VISITOR per IP per day and
   HIVEMIND_CHATS_PER_DAY in total.
+- The briefing and the "what happened" story are written by the model once a run has
+  finished (at most a few times per run); rewriting them on demand is turned off.
 - Destructive or local-only endpoints are disabled: deletes, resets, stop/close, the
   God's Eye View connector, the report tool endpoints, and forced regeneration.
 
@@ -162,10 +164,22 @@ _BLOCKED = [
     ('POST', re.compile(r'^/api/graph/project/[^/]+/reset$')),
     ('*', re.compile(r'^/api/godseye/')),
     ('POST', re.compile(r'^/api/simulation/(stop|close-env|generate-profiles|interview/all)$')),
-    ('POST', re.compile(r'^/api/simulation/[^/]+/(briefing|recap)$')),
     ('POST', re.compile(r'^/api/report/tools/')),
     ('GET', re.compile(r'^/api/simulation/script/')),
 ]
+
+_WRITEUP = re.compile(r'^/api/simulation/([^/]+)/(briefing|recap)$')
+_WRITES_PER_RUN = 3  # the fingerprint moves once or twice as a run settles; more is abuse
+
+
+def _run_finished(simulation_id: str) -> bool:
+    from .services.simulation_runner import SimulationRunner
+    rs = SimulationRunner.get_run_state(simulation_id)
+    if not rs:
+        return False
+    return (rs.runner_status.value == 'completed' or bool(rs.ready_for_report)
+            or SimulationRunner._check_all_platforms_completed(rs))
+
 
 _RUN_LIMIT_MSG = (
     "Today's free simulations on this site are used up ({n} a day, shared by everyone). "
@@ -215,6 +229,23 @@ def _check() -> object:
             logger.info(f'public run accepted ({day["runs"]}/{runs_per_day()} today)')
             return None
 
+        m = _WRITEUP.match(path)
+        if m:
+            # The briefing and the "what happened" story are one model call each, written
+            # once a run has finished and cached. Rewrites (force) were refused above.
+            sid, kind = m.group(1), m.group(2)
+            if not os.path.isdir(os.path.join(Config.OASIS_SIMULATION_DATA_DIR, sid)):
+                return _deny('Unknown simulation.', 404)
+            if not _run_finished(sid):
+                return _deny('This is written once the run has finished.', 409)
+            rec = data['simulations'].setdefault(sid, {'project_id': _sim_project(sid), 'history': True})
+            writes = rec.setdefault('writes', {})
+            if writes.get(kind, 0) >= _WRITES_PER_RUN:
+                return _deny('This run has already been written up.')
+            writes[kind] = writes.get(kind, 0) + 1
+            _save(data)
+            return None
+
         if path == '/api/graph/build':
             pid = body.get('project_id', '')
             rec = data['projects'].get(pid)
@@ -239,6 +270,11 @@ def _check() -> object:
         if path == '/api/simulation/prepare':
             sid = body.get('simulation_id', '')
             if sid not in data['simulations']:
+                # Opening an earlier run's setup page asks prepare again; when the run is
+                # already prepared the endpoint just returns it without any model calls.
+                from .api.simulation import _check_simulation_prepared
+                if _check_simulation_prepared(sid)[0]:
+                    return None
                 return _deny('Earlier runs are read-only on the public site.')
             return None
 

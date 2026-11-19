@@ -314,7 +314,7 @@
     "refreshGraph": "Refresh Graph",
     "graphMemoryRealtime": "Graph memory is updating live",
     "realtimeUpdating": "Updating in real-time...",
-    "pendingContentHint": "Some content is still processing. Consider refreshing the graph manually later.",
+    "pendingContentHint": "The run has finished. Agent memories may still be landing in the graph, so press Refresh in a minute to see them.",
     "nodeDetails": "Node Details",
     "relationship": "Relationship",
     "graphDataLoading": "Loading graph data...",

@@ -7,7 +7,7 @@
       </div>
       <div class="head-actions">
         <span class="source" :class="sourceClass"><span class="source-dot"></span>{{ sourceText }}</span>
-        <button v-if="finished && briefing?.can_write" class="ghost-btn" :disabled="writing" @click="emit('write', true)">
+        <button v-if="finished && briefing?.can_write && !isPublic" class="ghost-btn" :disabled="writing" @click="emit('write', true)">
           {{ $t('analytics.recapRewrite') }}
         </button>
         <button class="hm-btn hm-btn--primary hm-btn--sm" :disabled="downloading || !hasWriting" @click="emit('download')">
@@ -125,6 +125,9 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { fmt, pct } from './palette'
+
+// The public site writes each run up once; rewriting on demand is turned off there.
+const isPublic = import.meta.env.VITE_PUBLIC === '1'
 
 const props = defineProps({
   briefing: { type: Object, default: null },

@@ -486,6 +486,7 @@ const startStatusPolling = () => {
 }
 
 const startDetailPolling = () => {
+  fetchRunStatusDetail()  // load the feed now, not 3 s later (a finished run stops polling first)
   detailTimer = setInterval(fetchRunStatusDetail, 3000)
 }
 
@@ -543,6 +544,7 @@ const fetchRunStatus = async () => {
         addLog(readyEnvAlive ? t('log.roundsDoneEnvAlive') : t('log.simCompleted'))
         phase.value = 2
         stopPolling()
+        fetchRunStatusDetail()  // pick up the actions logged since the last poll
         emit('update-status', 'completed')
       }
     }

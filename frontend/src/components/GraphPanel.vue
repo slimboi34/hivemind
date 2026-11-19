@@ -269,11 +269,14 @@ const dismissFinishedHint = () => {
 }
 
 // 监听 isSimulating 变化，检测模拟结束
+// Only after a run was actually watched live: opening a finished run also flips
+// isSimulating briefly (processing -> completed), and that needs no hint.
+let simulatingSince = 0
 watch(() => props.isSimulating, (newValue, oldValue) => {
-  if (wasSimulating.value && !newValue) {
-    // 从模拟中变为非模拟状态，显示结束提示
+  if (wasSimulating.value && !newValue && Date.now() - simulatingSince > 15000) {
     showSimulationFinishedHint.value = true
   }
+  if (newValue && !wasSimulating.value) simulatingSince = Date.now()
   wasSimulating.value = newValue
 }, { immediate: true })
 

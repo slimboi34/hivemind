@@ -10,7 +10,7 @@
           <span class="source-dot"></span>{{ sourceText }}
         </span>
         <button
-          v-if="finished && recap?.can_write"
+          v-if="finished && recap?.can_write && !isPublic"
           class="ghost-btn"
           :disabled="writing"
           @click="emit('write', true)"
@@ -128,6 +128,9 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CATEGORY_COLOR, fmt, pct } from './palette'
+
+// The public site writes each run up once; rewriting on demand is turned off there.
+const isPublic = import.meta.env.VITE_PUBLIC === '1'
 
 const props = defineProps({
   recap: { type: Object, default: null },
