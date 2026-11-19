@@ -1,0 +1,43 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+      - name: Install dependencies (CPU-only torch, as in deploy/Dockerfile)
+        run: |
+          uv export --frozen --no-hashes --no-emit-project -o /tmp/req.txt
+          grep -vE '^(nvidia-|triton==|torch==)' /tmp/req.txt > /tmp/req-cpu.txt
+          TORCH="$(grep -E '^torch==' /tmp/req.txt | sed -E 's/^torch==([^ ;]+).*/\1/')"
+          uv venv .venv --python 3.12
+          uv pip install --python .venv "torch==${TORCH}" --index-url https://download.pytorch.org/whl/cpu
+          uv pip install --python .venv -r /tmp/req-cpu.txt
+      - name: Run tests (no API keys; tests that need live services skip themselves)
+        run: .venv/bin/python -m pytest -q
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --prefix frontend
+      - run: npm run build --prefix frontend
