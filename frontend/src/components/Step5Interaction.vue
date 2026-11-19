@@ -243,7 +243,8 @@
 
           <!-- Chat Messages -->
           <div class="chat-messages" ref="chatMessages">
-            <div v-if="chatHistory.length === 0" class="chat-empty">
+            <div v-if="chatTarget === 'agent' && agentsOffline" class="offline-note">{{ $t('step5.agentsOffline') }}</div>
+            <div v-if="chatHistory.length === 0 && !(chatTarget === 'agent' && agentsOffline)" class="chat-empty">
               <div class="empty-icon">
                 <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -294,14 +295,14 @@
               class="chat-input"
               :placeholder="$t('step5.chatInputPlaceholder')"
               @keydown.enter.exact.prevent="sendMessage"
-              :disabled="isSending || (!selectedAgent && chatTarget === 'agent')"
+              :disabled="isSending || (chatTarget === 'agent' && (!selectedAgent || agentsOffline))"
               rows="1"
               ref="chatInputRef"
             ></textarea>
             <button 
               class="send-btn"
               @click="sendMessage"
-              :disabled="!chatInput.trim() || isSending || (!selectedAgent && chatTarget === 'agent')"
+              :disabled="!chatInput.trim() || isSending || (chatTarget === 'agent' && (!selectedAgent || agentsOffline))"
             >
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -363,9 +364,10 @@
               ></textarea>
             </div>
 
+            <div v-if="agentsOffline" class="offline-note">{{ $t('step5.agentsOffline') }}</div>
             <button 
               class="survey-submit-btn"
-              :disabled="selectedAgents.size === 0 || !surveyQuestion.trim() || isSurveying"
+              :disabled="agentsOffline || selectedAgents.size === 0 || !surveyQuestion.trim() || isSurveying"
               @click="submitSurvey"
             >
               <span v-if="isSurveying" class="loading-spinner"></span>
@@ -414,7 +416,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { chatWithReport, getReport, getAgentLog } from '../api/report'
-import { interviewAgents, getSimulationProfilesRealtime } from '../api/simulation'
+import { interviewAgents, getSimulationProfilesRealtime, getEnvStatus } from '../api/simulation'
 
 const { t } = useI18n()
 
@@ -914,6 +916,20 @@ const loadAgentLogs = async () => {
   }
 }
 
+// Simulated people can only be interviewed while their run's environment is still up
+// (kept alive for a while after the last round). Earlier runs: say so up front.
+const envAlive = ref(null)
+const agentsOffline = computed(() => envAlive.value === false)
+const checkEnv = async () => {
+  if (!props.simulationId) return
+  try {
+    const res = await getEnvStatus({ simulation_id: props.simulationId })
+    envAlive.value = !!res.data?.env_alive
+  } catch {
+    envAlive.value = null
+  }
+}
+
 const loadProfiles = async () => {
   if (!props.simulationId) return
   
@@ -957,11 +973,24 @@ watch(() => props.reportId, (newId) => {
 watch(() => props.simulationId, (newId) => {
   if (newId) {
     loadProfiles()
+    checkEnv()
   }
 }, { immediate: true })
 </script>
 
 <style scoped>
+.offline-note {
+  margin: var(--hm-space-3, 12px) 0;
+  padding: var(--hm-space-3, 12px) var(--hm-space-4, 16px);
+  background: var(--hm-surface-2);
+  border: 1px solid var(--hm-line);
+  border-left: 3px solid var(--hm-signal);
+  border-radius: var(--hm-radius-md, 8px);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--hm-ink-2);
+}
+
 .interaction-panel {
   height: 100%;
   display: flex;

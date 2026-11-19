@@ -293,6 +293,7 @@
     "toolInterviewSubAgentDesc": "Interviews simulated people in parallel and collects their views.",
     "profileBio": "Bio",
     "chatEmptyReportAgent": "Ask the report agent about any finding in the report.",
+    "agentsOffline": "These simulated people are offline. They can only be interviewed while their run is still up (on the public site, for about 20 minutes after it finishes). Ask the report agent instead: it can still search everything they said.",
     "chatEmptyAgent": "Pick an agent and ask how they saw events unfold.",
     "chatInputPlaceholder": "Type your question...",
     "selectSurveyTarget": "Select survey targets",
