@@ -183,6 +183,15 @@ try:
 except Exception as _patch_error:  # never block a run on the patch layer itself
     print(f"[oasis-patch] not applied: {_patch_error}", flush=True)
 
+# Hivemind: accounts that join while the run is under way (see agent_spawner.py).
+try:
+    from agent_spawner import SpawnDirector, growth as _growth
+    first_busy_hour = _growth.first_busy_hour
+except Exception as _spawn_error:  # a run without newcomers is still a run
+    SpawnDirector = None
+    first_busy_hour = lambda config: 0  # noqa: E731
+    print(f"[cast-growth] unavailable: {_spawn_error}", flush=True)
+
 
 # Twitter可用动作（不包含INTERVIEW，INTERVIEW只能通过ManualAction手动触发）
 TWITTER_ACTIONS = [
@@ -1113,7 +1122,8 @@ async def run_twitter_simulation(
     simulation_dir: str,
     action_logger: Optional[PlatformActionLogger] = None,
     main_logger: Optional[SimulationLogManager] = None,
-    max_rounds: Optional[int] = None
+    max_rounds: Optional[int] = None,
+    director=None
 ) -> PlatformSimulation:
     """运行Twitter模拟
     
@@ -1177,6 +1187,11 @@ async def run_twitter_simulation(
     
     total_actions = 0
     last_rowid = 0  # 跟踪数据库中最后处理的行号（使用 rowid 避免 created_at 格式差异）
+
+    # Hivemind: each circle account follows the actor it surrounds. These are set-up
+    # edges, not choices the agents made, so they are kept out of the action log.
+    if director and await director.apply_circle_follows(result.env, "twitter"):
+        _, last_rowid = fetch_new_actions_from_db(db_path, last_rowid, agent_names)
     
     # 执行初始事件
     event_config = config.get("event_config", {})
@@ -1212,6 +1227,14 @@ async def run_twitter_simulation(
             except Exception:
                 pass
         
+        if director:
+            # The opening posts are what the first newcomers react to.
+            director.observe([
+                {"agent_name": agent_names.get(p.get("poster_agent_id", 0), ""), "action_type": "CREATE_POST",
+                 "action_args": {"content": p.get("content", "")}}
+                for p in initial_posts
+            ])
+
         if initial_actions:
             await result.env.step(initial_actions)
             log_info(f"已发布 {len(initial_actions)} 条初始帖子")
@@ -1233,6 +1256,9 @@ async def run_twitter_simulation(
         if total_rounds < original_rounds:
             log_info(f"轮数已截断: {original_rounds} -> {total_rounds} (max_rounds={max_rounds})")
     
+    start_hour = first_busy_hour(config)
+    log_info(f"The run starts at {start_hour:02d}:00 simulated time")
+
     start_time = datetime.now()
     
     for round_num in range(total_rounds):
@@ -1242,13 +1268,25 @@ async def run_twitter_simulation(
                 main_logger.info(f"收到退出信号，在第 {round_num + 1} 轮停止模拟")
             break
         
-        simulated_minutes = round_num * minutes_per_round
+        simulated_minutes = start_hour * 60 + round_num * minutes_per_round
         simulated_hour = (simulated_minutes // 60) % 24
         simulated_day = simulated_minutes // (60 * 24) + 1
         
+        # Hivemind: accounts pulled in by what has happened so far join here, and act
+        # in the round they arrive (something specific brought them).
+        newcomers = []
+        if director:
+            wave = await director.wave_for(round_num + 1)
+            newcomers = await director.join(
+                result.env, "twitter", wave, model, TWITTER_ACTIONS, agent_names
+            )
+
         active_agents = get_active_agents_for_round(
             result.env, config, simulated_hour, round_num
         )
+        if newcomers:
+            present = {agent_id for agent_id, _ in active_agents}
+            active_agents.extend(n for n in newcomers if n[0] not in present)
         
         # 无论是否有活跃agent，都记录round开始
         if action_logger:
@@ -1268,6 +1306,9 @@ async def run_twitter_simulation(
             db_path, last_rowid, agent_names
         )
         
+        if director:
+            director.observe(actual_actions)
+
         round_action_count = 0
         for action_data in actual_actions:
             if action_logger:
@@ -1305,7 +1346,8 @@ async def run_reddit_simulation(
     simulation_dir: str,
     action_logger: Optional[PlatformActionLogger] = None,
     main_logger: Optional[SimulationLogManager] = None,
-    max_rounds: Optional[int] = None
+    max_rounds: Optional[int] = None,
+    director=None
 ) -> PlatformSimulation:
     """运行Reddit模拟
     
@@ -1368,6 +1410,11 @@ async def run_reddit_simulation(
     
     total_actions = 0
     last_rowid = 0  # 跟踪数据库中最后处理的行号（使用 rowid 避免 created_at 格式差异）
+
+    # Hivemind: each circle account follows the actor it surrounds. These are set-up
+    # edges, not choices the agents made, so they are kept out of the action log.
+    if director and await director.apply_circle_follows(result.env, "reddit"):
+        _, last_rowid = fetch_new_actions_from_db(db_path, last_rowid, agent_names)
     
     # 执行初始事件
     event_config = config.get("event_config", {})
@@ -1411,6 +1458,14 @@ async def run_reddit_simulation(
             except Exception:
                 pass
         
+        if director:
+            # The opening posts are what the first newcomers react to.
+            director.observe([
+                {"agent_name": agent_names.get(p.get("poster_agent_id", 0), ""), "action_type": "CREATE_POST",
+                 "action_args": {"content": p.get("content", "")}}
+                for p in initial_posts
+            ])
+
         if initial_actions:
             await result.env.step(initial_actions)
             log_info(f"已发布 {len(initial_actions)} 条初始帖子")
@@ -1432,6 +1487,9 @@ async def run_reddit_simulation(
         if total_rounds < original_rounds:
             log_info(f"轮数已截断: {original_rounds} -> {total_rounds} (max_rounds={max_rounds})")
     
+    start_hour = first_busy_hour(config)
+    log_info(f"The run starts at {start_hour:02d}:00 simulated time")
+
     start_time = datetime.now()
     
     for round_num in range(total_rounds):
@@ -1441,13 +1499,25 @@ async def run_reddit_simulation(
                 main_logger.info(f"收到退出信号，在第 {round_num + 1} 轮停止模拟")
             break
         
-        simulated_minutes = round_num * minutes_per_round
+        simulated_minutes = start_hour * 60 + round_num * minutes_per_round
         simulated_hour = (simulated_minutes // 60) % 24
         simulated_day = simulated_minutes // (60 * 24) + 1
         
+        # Hivemind: accounts pulled in by what has happened so far join here, and act
+        # in the round they arrive (something specific brought them).
+        newcomers = []
+        if director:
+            wave = await director.wave_for(round_num + 1)
+            newcomers = await director.join(
+                result.env, "reddit", wave, model, REDDIT_ACTIONS, agent_names
+            )
+
         active_agents = get_active_agents_for_round(
             result.env, config, simulated_hour, round_num
         )
+        if newcomers:
+            present = {agent_id for agent_id, _ in active_agents}
+            active_agents.extend(n for n in newcomers if n[0] not in present)
         
         # 无论是否有活跃agent，都记录round开始
         if action_logger:
@@ -1467,6 +1537,9 @@ async def run_reddit_simulation(
             db_path, last_rowid, agent_names
         )
         
+        if director:
+            director.observe(actual_actions)
+
         round_action_count = 0
         for action_data in actual_actions:
             if action_logger:
@@ -1585,16 +1658,23 @@ async def main():
     # 存储两个平台的模拟结果
     twitter_result: Optional[PlatformSimulation] = None
     reddit_result: Optional[PlatformSimulation] = None
+
+    director = None
+    if SpawnDirector is not None:
+        try:
+            director = SpawnDirector(config, simulation_dir, log=log_manager.info)
+        except Exception as e:
+            log_manager.info(f"[cast-growth] not started: {e}")
     
     if args.twitter_only:
-        twitter_result = await run_twitter_simulation(config, simulation_dir, twitter_logger, log_manager, args.max_rounds)
+        twitter_result = await run_twitter_simulation(config, simulation_dir, twitter_logger, log_manager, args.max_rounds, director)
     elif args.reddit_only:
-        reddit_result = await run_reddit_simulation(config, simulation_dir, reddit_logger, log_manager, args.max_rounds)
+        reddit_result = await run_reddit_simulation(config, simulation_dir, reddit_logger, log_manager, args.max_rounds, director)
     else:
         # 并行运行（每个平台使用独立的日志记录器）
         results = await asyncio.gather(
-            run_twitter_simulation(config, simulation_dir, twitter_logger, log_manager, args.max_rounds),
-            run_reddit_simulation(config, simulation_dir, reddit_logger, log_manager, args.max_rounds),
+            run_twitter_simulation(config, simulation_dir, twitter_logger, log_manager, args.max_rounds, director),
+            run_reddit_simulation(config, simulation_dir, reddit_logger, log_manager, args.max_rounds, director),
         )
         twitter_result, reddit_result = results
     

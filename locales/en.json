@@ -872,7 +872,7 @@
     "briefWatch": "What to watch",
     "briefFoot": "Every participant is simulated. \"Likely next\" and \"Likely move\" are inferences from what the simulated participants wrote, not statements by the real organisations. The PDF adds the story of the run and the run diagnostics.",
     "castTitle": "The cast",
-    "castSubtitle": "Every simulated participant, grouped by the role they play. Click a name to follow them through the page.",
+    "castSubtitle": "Every simulated participant, grouped by the role they play, with the people around the key actors branching off them. Click a name to follow them through the page.",
     "castProgress": "Spinning up · {ready} of {total}",
     "castReady": "{n} agents ready",
     "castAgents": "agents",
@@ -880,7 +880,14 @@
     "castAria": "Tree of {n} simulated participants grouped by role",
     "castStance": "Starting stance:",
     "castPending": "Persona still being written…",
-    "castGroupRing": "Ring colour = group"
+    "castGroupRing": "Ring colour = group",
+    "castOriginEvidence": "Named in the evidence",
+    "castOriginCircle": "The people around them",
+    "castOriginJoined": "Joined mid-run",
+    "castGrowing": "Run in progress · more can join",
+    "castAround": "Around {name}",
+    "castJoinedRound": "Joined in round {n}",
+    "castAdded": "Added by Hivemind, not named in the evidence"
   },
   "godseye": {
     "title": "Live situation from God's Eye View",

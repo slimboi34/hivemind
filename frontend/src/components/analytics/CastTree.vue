@@ -22,12 +22,18 @@
           </button>
         </li>
       </ul>
+      <ul v-if="added" class="origins">
+        <li><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" class="k-evidence" /></svg>{{ $t('analytics.castOriginEvidence') }} <span class="count">{{ cast.origins.evidence }}</span></li>
+        <li v-if="cast.origins.circle"><svg width="12" height="12"><circle cx="6" cy="6" r="3.5" class="k-circle" /></svg>{{ $t('analytics.castOriginCircle') }} <span class="count">{{ cast.origins.circle }}</span></li>
+        <li v-if="cast.origins.joined"><svg width="12" height="12"><path :d="DIAMOND" transform="translate(6,6)" class="k-joined" /></svg>{{ $t('analytics.castOriginJoined') }} <span class="count">{{ cast.origins.joined }}</span></li>
+        <li v-if="cast.growing" class="growing"><span class="progress-dot"></span>{{ $t('analytics.castGrowing') }}</li>
+      </ul>
 
       <div class="stage" ref="stageEl" @pointerleave="hover = null">
         <svg :width="width" :height="height" role="img" :aria-label="$t('analytics.castAria', { n: cast.total })">
           <g :transform="`translate(${width / 2},${height / 2})`">
             <path v-for="l in links" :key="l.key" :d="l.d" class="link"
-              :stroke="l.color" :stroke-opacity="l.opacity" :stroke-width="l.w" fill="none" />
+              :stroke="l.color" :stroke-opacity="l.opacity" :stroke-width="l.w" :stroke-dasharray="l.dash" fill="none" />
 
             <g v-for="n in branches" :key="n.key" :transform="n.t" :opacity="n.opacity">
               <circle :r="n.r" :fill="n.color" />
@@ -35,9 +41,10 @@
             </g>
 
             <g v-for="n in leaves" :key="n.key" :transform="n.t" :opacity="n.opacity" class="leaf"
-              :class="{ pending: !n.agent.ready, selected: n.agent.name === selected }"
+              :class="[n.agent.origin, { pending: !n.agent.ready, selected: n.agent.name === selected }]"
               @pointerenter="hover = n" @click="emit('update:selected', n.agent.name === selected ? null : n.agent.name)">
-              <circle :r="n.r" :fill="n.agent.ready ? n.color : 'var(--hm-surface)'" :stroke="n.color" />
+              <path v-if="n.agent.origin === 'joined'" :d="DIAMOND" :fill="n.color" stroke="var(--hm-ink)" />
+              <circle v-else :r="n.r" :fill="n.agent.ready ? n.color : 'var(--hm-surface)'" :stroke="n.color" />
               <text :transform="n.textT" :text-anchor="n.anchor" dy="0.32em" :dx="n.dx" :style="{ fontSize: leafFont + 'px' }">{{ n.short }}</text>
             </g>
 
@@ -52,9 +59,13 @@
         <div v-if="hover" class="tip" :style="tipStyle">
           <div class="tip-title">{{ hover.agent.name }}</div>
           <div class="tip-line">{{ hover.typeLabel }} · {{ hover.groupLabel }}</div>
+          <div v-if="hover.agent.anchor" class="tip-line tip-tie">{{ hover.agent.relation ? `${cap(hover.agent.relation)} ${hover.agent.anchor}` : $t('analytics.castAround', { name: hover.agent.anchor }) }}</div>
           <div v-if="hover.agent.profession" class="tip-line">{{ hover.agent.profession }}</div>
           <div v-if="hover.agent.stance" class="tip-line">{{ $t('analytics.castStance') }} {{ hover.agent.stance }}</div>
           <div v-if="hover.agent.bio" class="tip-bio">{{ hover.agent.bio }}</div>
+          <div v-if="hover.agent.joined_round" class="tip-line tip-tie">{{ $t('analytics.castJoinedRound', { n: hover.agent.joined_round }) }}</div>
+          <div v-if="hover.agent.why" class="tip-bio">{{ hover.agent.why }}</div>
+          <div v-if="hover.agent.origin !== 'evidence'" class="tip-line added-note">{{ $t('analytics.castAdded') }}</div>
           <div v-if="!hover.agent.ready" class="tip-line pending-note">{{ $t('analytics.castPending') }}</div>
         </div>
       </div>
@@ -77,6 +88,9 @@ const props = defineProps({
 const emit = defineEmits(['update:selected', 'loaded'])
 
 const POLL_MS = 2000
+const GROWING_POLL_MS = 5000
+const DIAMOND = 'M0,-5.5L5.5,0L0,5.5L-5.5,0Z'
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1)
 const cast = ref(null)
 const focus = ref(null)
 const hover = ref(null)
@@ -86,6 +100,7 @@ let timer = null
 let observer = null
 
 const leafCount = computed(() => cast.value?.total || 0)
+const added = computed(() => (cast.value?.origins?.circle || 0) + (cast.value?.origins?.joined || 0))
 // Room for the labels grows with the cast; the ring never gets so tight that names collide.
 const height = computed(() => Math.round(Math.min(Math.max(640, leafCount.value * 9 + 300), 860)))
 const leafFont = computed(() => (leafCount.value > 110 ? 8.5 : leafCount.value > 70 ? 9.5 : 11))
@@ -97,13 +112,22 @@ const root = computed(() => {
   const data = {
     children: cast.value.groups.map(g => ({
       group: g,
-      children: g.types.map(t => ({ group: g, type: t, children: t.agents.map(a => ({ group: g, type: t, agent: a })) }))
+      children: g.types.map(t => ({
+        group: g,
+        type: t,
+        // An actor with people around it becomes a small fork: itself first, then its circle.
+        children: t.agents.map(a => (a.circle?.length
+          ? { group: g, type: t, children: [a, ...a.circle].map(m => ({ group: g, type: t, agent: m })) }
+          : { group: g, type: t, agent: a }))
+      }))
     }))
   }
   const h = d3.hierarchy(data)
   d3.cluster().size([2 * Math.PI, radius.value]).separation((a, b) => (a.parent === b.parent ? 1 : 2.2))(h)
   // Pull the group and type rings inwards so the three levels read as rings.
-  h.each(n => { n.y = [0, radius.value * 0.36, radius.value * 0.68, radius.value][n.depth] })
+  h.each(n => {
+    n.y = n.children ? [0, radius.value * 0.36, radius.value * 0.68, radius.value * 0.88][n.depth] : radius.value
+  })
   return h
 })
 
@@ -123,6 +147,7 @@ const links = computed(() => {
       d: gen(l),
       color: GROUP_COLOR[g.key],
       w: l.target.depth === 1 ? 2 : l.target.depth === 2 ? 1.4 : 1,
+      dash: l.target.data.agent && l.target.data.agent.origin !== 'evidence' ? '3 3' : null,
       opacity: dim(g.key) * (ready ? 0.55 : 0.18)
     }
   })
@@ -130,17 +155,18 @@ const links = computed(() => {
 
 const branches = computed(() => {
   if (!root.value) return []
-  return root.value.descendants().filter(n => n.depth === 1 || n.depth === 2).map((n, i) => {
+  return root.value.descendants().filter(n => n.depth >= 1 && n.children).map((n, i) => {
     const g = n.data.group
     const isGroup = n.depth === 1
+    const isFork = n.depth === 3
     // A type ring label only earns its place when the group has more than one type.
     // It is written inwards, so it may only be as long as the gap to the group ring.
     const room = Math.max(6, Math.floor((radius.value * 0.32 - 12) / 5.2))
-    const label = isGroup ? null : (g.types.length > 1 ? clip(n.data.type.label, Math.min(22, room)) : null)
+    const label = isGroup || isFork ? null : (g.types.length > 1 ? clip(n.data.type.label, Math.min(22, room)) : null)
     return {
       key: `${n.depth}-${i}`,
       t: polar(n),
-      r: isGroup ? 6 : 3.5,
+      r: isGroup ? 6 : isFork ? 2.2 : 3.5,
       color: GROUP_COLOR[g.key],
       opacity: dim(g.key),
       label,
@@ -159,16 +185,16 @@ const leaves = computed(() => {
   return root.value.leaves().map((n) => {
     const g = n.data.group
     return {
-      key: `${g.key}-${n.data.type.type}-${n.data.agent.name}`,
+      key: n.data.agent.name,
       t: polar(n),
       x: n.x,
       y: n.y,
-      r: 4.5,
+      r: n.data.agent.origin === 'circle' ? 3.5 : 4.5,
       color: GROUP_COLOR[g.key],
       opacity: dim(g.key),
       agent: n.data.agent,
       short: clip(n.data.agent.name, max),
-      typeLabel: n.data.type.label,
+      typeLabel: n.data.agent.type_label || n.data.type.label,
       groupLabel: g.label,
       anchor: flipped(n) ? 'end' : 'start',
       dx: flipped(n) ? -9 : 9,
@@ -197,7 +223,9 @@ const load = async () => {
     emit('loaded', res.data)
   } catch (e) { /* the tree is a bonus view; the page works without it */ }
   clearTimeout(timer)
+  // Keep looking while personas are being written, and while a run can still pull people in.
   if (props.live && !cast.value?.complete) timer = setTimeout(load, POLL_MS)
+  else if (props.live && cast.value?.growing) timer = setTimeout(load, GROWING_POLL_MS)
 }
 
 watch(() => props.simulationId, load)
@@ -230,6 +258,16 @@ onUnmounted(() => { clearTimeout(timer); observer?.disconnect() })
 .group-toggle.off { opacity: 0.45; }
 .count { color: var(--hm-ink-4); font-variant-numeric: tabular-nums; }
 
+.origins {
+  display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0 0; padding: 0; list-style: none;
+  font-size: 12px; color: var(--hm-ink-3);
+}
+.origins li { display: inline-flex; align-items: center; gap: 6px; }
+.k-evidence { fill: var(--hm-ink-3); }
+.k-circle { fill: var(--hm-ink-3); fill-opacity: 0.35; stroke: var(--hm-ink-3); stroke-width: 1.4px; }
+.k-joined { fill: var(--hm-ink-3); stroke: var(--hm-ink); }
+.growing { color: var(--hm-signal-ink); }
+
 .stage { position: relative; width: 100%; overflow: hidden; }
 svg { display: block; }
 .link { transition: stroke-opacity 0.5s ease; }
@@ -238,6 +276,9 @@ svg { display: block; }
 .leaf circle { stroke-width: 1.6px; transition: fill 0.5s ease; }
 .leaf text { fill: var(--hm-ink); }
 .leaf.pending text { fill: var(--hm-ink-5); }
+.leaf.circle circle { fill-opacity: 0.35; }
+.leaf.circle text, .leaf.joined text { fill: var(--hm-ink-3); }
+.leaf path { stroke-width: 1.2px; }
 .leaf.pending circle { stroke-dasharray: 2 2; }
 .leaf:hover text, .leaf.selected text { font-weight: 600; }
 .leaf.selected circle { stroke: var(--hm-ink); stroke-width: 2.5px; }
@@ -249,5 +290,7 @@ svg { display: block; }
 .tip-line { line-height: 1.5; }
 .tip-bio { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--hm-line); line-height: 1.45; color: var(--hm-ink-3); }
 .pending-note { color: var(--hm-signal-ink); }
+.tip-tie { font-weight: 600; }
+.added-note { margin-top: 6px; color: var(--hm-ink-4); font-size: 11px; }
 @media (prefers-reduced-motion: reduce) { .progress-dot { animation: none; } .link, .leaf circle { transition: none; } }
 </style>

@@ -27,6 +27,7 @@
         <span class="tag" :class="`conf-${confidence.level}`">{{ $t('analytics.briefTrust') }}: {{ $t(`analytics.briefConfidence.${confidence.level}`) }}</span>
         <span>{{ confidence.why }}</span>
       </p>
+      <p v-if="facts.run?.cast?.note" class="cast-note">{{ facts.run.cast.note }}</p>
 
       <ul v-if="reading.what_it_means?.length" class="means" :class="{ fading: writing }">
         <li v-for="(m, i) in reading.what_it_means" :key="i">{{ m }}</li>
@@ -184,6 +185,7 @@ const sourceText = computed(() => {
   margin: 0 0 12px; font-family: var(--hm-font-display); font-size: var(--hm-text-xl); font-weight: 500;
   letter-spacing: var(--hm-tracking-display); line-height: var(--hm-leading-snug); color: var(--hm-ink); max-width: 70ch;
 }
+.cast-note { margin: -8px 0 16px; font-size: var(--hm-text-xs); color: var(--hm-ink-4); max-width: 100ch; }
 .confidence { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 16px; font-size: var(--hm-text-xs); color: var(--hm-ink-4); max-width: 100ch; }
 
 .tag {

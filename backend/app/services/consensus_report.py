@@ -302,6 +302,8 @@ def _briefing(d: _Doc, briefing: Dict[str, Any]) -> None:
         (str(run["approving"] + run["disapproving"]), "reactions to posts"),
         (_pct(run["reception"]), "of reactions were approving"),
     ])
+    if (run.get("cast") or {}).get("note"):
+        d.text(run["cast"]["note"], size=8.5, color=MUTED, after=8)
 
     if reading.get("what_it_means"):
         d.label("What it means")

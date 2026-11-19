@@ -102,6 +102,23 @@ def type_label(entity_type: Optional[str]) -> str:
 # Facts
 # --------------------------------------------------------------------------- #
 
+def cast_note(mix: Dict[str, Any]) -> str:
+    """One plain sentence on who was added to the cast. Empty when nobody was."""
+    circle, joined = mix.get("circle") or 0, mix.get("joined") or 0
+    if not circle + joined:
+        return ""
+    parts = []
+    if circle:
+        parts.append(f"{circle} {'person' if circle == 1 else 'people'} around the key actors")
+    if joined:
+        parts.append(f"{joined} who {'was' if joined == 1 else 'were'} drawn in as the conversation grew")
+    share = round((mix.get("added_share_of_posts") or 0) * 100)
+    return (
+        f"{mix.get('evidence') or 0} of these voices are named in the evidence. Hivemind added "
+        f"{' and '.join(parts)}, described by role. Together the added voices wrote {share}% of the posts and replies."
+    )
+
+
 def build_briefing_facts(
     actions: List[Dict[str, Any]],
     roster: List[Dict[str, Any]],
@@ -122,10 +139,12 @@ def build_briefing_facts(
 
     etype: Dict[str, str] = {}
     configured_stance: Dict[str, str] = {}
+    origin: Dict[str, str] = {}
     for row in roster or []:
         name = str(row.get("entity_name") or "").strip()
         if not name:
             continue
+        origin[name] = row.get("origin") if row.get("origin") in ("circle", "joined") else "evidence"
         etype[name] = str(row.get("entity_type") or "")
         if row.get("stance"):
             configured_stance[name] = str(row["stance"])
@@ -320,6 +339,19 @@ def build_briefing_facts(
         if (src, dst) not in pair_support:
             pairs.append({"from": GROUP_LABEL[src], "to": GROUP_LABEL[dst], "approving": 0, "disapproving": n})
 
+    # Accounts Hivemind added (the circle around key actors, and mid-run joiners) are
+    # invented, so the reader is always told how many there were and how loud they were.
+    written = {n: p["posts"] + p["replies"] for n, p in people.items()}
+    added_written = sum(v for n, v in written.items() if origin.get(n, "evidence") != "evidence")
+    cast_mix = {
+        "evidence": sum(1 for o in origin.values() if o == "evidence"),
+        "circle": sum(1 for o in origin.values() if o == "circle"),
+        "joined": sum(1 for o in origin.values() if o == "joined"),
+        "added_share_of_posts": round(added_written / sum(written.values()), 2) if sum(written.values()) else 0.0,
+        "added_names": sorted(n for n, o in origin.items() if o != "evidence"),
+    }
+    cast_mix["note"] = cast_note(cast_mix)
+
     active_people = sum(g["active"] for g in groups)
     roster_size = len(etype) or len(people)
     status = run.get("status")
@@ -333,6 +365,7 @@ def build_briefing_facts(
             "duration": _duration_label(last_round * max(int(minutes_per_round or 60), 1)),
             "people_total": roster_size,
             "people_active": active_people,
+            "cast": cast_mix,
             "posts": sum(g["posts"] for g in groups),
             "replies": sum(g["replies"] for g in groups),
             "approving": support_total,
@@ -504,6 +537,7 @@ Rules:
 - "reception" is the share of reactions to a group's posts that were approving. It measures how warmly their posts were received, not their opinion.
 - "likely_next" and "likely_move" are your inference of what that actor would do next, given what they said in the run. Start them with a verb. Keep each tied to something the actor actually said. If a group or company wrote nothing, set stance to "quiet" and say the run gives no basis for a prediction.
 - "starting_stances" is how the simulation cast the actors before the run; use it only as background.
+- run.cast.added_names lists voices Hivemind added to the cast: the people around the key actors, and people drawn in as the conversation grew. They are described by role and were not named in the evidence. Use them as evidence of how ordinary affected people react. Never present an added voice's view as the position of a named actor, and do not build a consensus or a company's likely move on added voices alone.
 - Avoid jargon: no "cascade", "branching", "agent", "round", "engagement", "entity". Say "people", "voices", "posts", "reactions".
 - The two simulated platforms are "Info Plaza" (a short-post feed) and "Topic Community" (threaded discussion). Never say Twitter or Reddit.
 - Do not use quotation marks unless the words are copied exactly from a "text" field.

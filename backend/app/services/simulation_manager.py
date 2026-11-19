@@ -431,6 +431,29 @@ class SimulationManager:
                 enable_reddit=state.enable_reddit
             )
             
+            # Hivemind: add the people immediately around the key actors (cast_circle.py).
+            # They are numbered after the evidence cast, so nothing above changes.
+            from .cast_circle import expand_circle
+            circle_profiles, circle_configs = expand_circle(
+                filtered.entities, simulation_requirement, sim_params.agent_configs
+            )
+            if circle_profiles:
+                profiles = list(profiles) + circle_profiles
+                sim_params.agent_configs.extend(circle_configs)
+                if state.enable_reddit:
+                    generator.save_profiles(
+                        profiles=profiles,
+                        file_path=os.path.join(sim_dir, "reddit_profiles.json"),
+                        platform="reddit"
+                    )
+                if state.enable_twitter:
+                    generator.save_profiles(
+                        profiles=profiles,
+                        file_path=os.path.join(sim_dir, "twitter_profiles.csv"),
+                        platform="twitter"
+                    )
+                state.profiles_count = len(profiles)
+
             if progress_callback:
                 progress_callback(
                     "generating_config", 70,

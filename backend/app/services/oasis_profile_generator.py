@@ -1231,6 +1231,8 @@ class OasisProfileGenerator:
             "male": "male",
             "female": "female",
             "other": "other",
+            # A person whose gender was never stated (the circle and mid-run joiners).
+            "unspecified": "unspecified",
         }
         
         return gender_map.get(gender_lower, "other")
@@ -1268,7 +1270,7 @@ class OasisProfileGenerator:
                 "age": profile.age if profile.age else 30,
                 "gender": self._normalize_gender(profile.gender),
                 "mbti": profile.mbti if profile.mbti else "ISTJ",
-                "country": profile.country if profile.country else "中国",
+                "country": profile.country if profile.country else "Not specified",
             }
             
             # 可选字段

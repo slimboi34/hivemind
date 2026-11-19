@@ -240,6 +240,49 @@ Replace "everything is prose" with a small record per agent, kept beside the per
 5. **Repeated seeded runs.** Multiplies cost by N; pair with tiering.
 6. **Local graph store.** Large; do it last, behind the interface.
 
+## 5.4 Growing the cast (built)
+
+Before this, nothing ever joined a run. The cast was every typed node in the knowledge
+graph, fixed at setup, and all of it was loaded when the simulation started. Anyone the
+evidence did not name did not exist.
+
+Two additions, both in `cast_growth.py` (rules and prompts), `cast_circle.py` (setup) and
+`scripts/agent_spawner.py` (during the run):
+
+| | The circle | Joiners |
+|---|---|---|
+| When | At setup, after personas and behaviour are written | During the run, at the start of every second round from round 2 |
+| Who | Up to two people immediately around each of the six most connected actors: staff, customers, members, rivals, the reporter on the beat | People pulled in by what just drew attention: those around the actors in the busiest threads, and those affected by a narrow angle nobody present speaks for |
+| How chosen | One model call for the whole cast | One model call per look, given the cast and the posts that drew the most reactions since the last look. No call when nothing was posted |
+| Tied to | Always an anchor (the actor they surround), and they follow that actor on both platforms | An anchor where one fits, otherwise the topic |
+| First action | Scheduled like anyone else | They act in the round they arrive |
+
+Rules that apply to both:
+
+- **Named by role, never by an invented personal name** ("Springbok fan club organiser"), and
+  never a relative or private associate of a real person.
+- **Capped at a quarter of the evidence cast each** (`cap_for`), so the people the evidence
+  names always outnumber the people Hivemind added.
+- **Always labelled.** Every account carries `origin` (`evidence`, `circle` or `joined`),
+  its anchor, its relation and, for joiners, the round and the reason. The cast tree draws
+  them as branches off their actor, and the briefing states how many were added and what
+  share of the posts they wrote. The briefing model is told not to treat an added voice as
+  a named actor's position.
+- **A rerun starts clean.** Joiners from an earlier run of the same simulation are removed
+  before the next one starts.
+- **Optional.** `HIVEMIND_CIRCLE=0` and `HIVEMIND_JOIN=0` switch them off; a run's
+  `growth_config` can change every limit. If the model call fails the run carries on with
+  the cast it has.
+
+Found while testing this on a live run, and fixed: the simulated clock started at midnight,
+when almost nobody is scheduled to be awake, so a ten-round run spent seven rounds empty.
+A run now starts at the first hour when at least half the cast is active
+(`first_busy_hour`; `time_config.start_hour` overrides it).
+
+Not done: the single-platform runner scripts (`run_twitter_simulation.py`,
+`run_reddit_simulation.py`) do not have joiners or the clock fix; only the default
+two-platform runner does. The influence network does not yet draw anchor ties.
+
 ## 6. Open questions for the owner
 
 - How large should a default cast be, and what should a default run cost?

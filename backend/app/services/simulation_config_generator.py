@@ -81,6 +81,16 @@ class AgentActivityConfig:
     # 影响力权重（决定其发言被其他Agent看到的概率）
     influence_weight: float = 1.0
 
+    # Hivemind: where this account came from (see cast_growth.py). "evidence" is a
+    # name from the knowledge graph, "circle" was added around a key actor at setup,
+    # "joined" arrived while the run was under way.
+    origin: str = "evidence"
+    anchor_agent_id: Optional[int] = None
+    anchor_name: Optional[str] = None
+    relation: str = ""
+    why: str = ""
+    joined_round: int = 0
+
 
 @dataclass  
 class TimeSimulationConfig:

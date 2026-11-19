@@ -880,7 +880,14 @@
     "castAria": "按角色分组的 {n} 个模拟参与者树状图",
     "castStance": "初始立场：",
     "castPending": "人设仍在撰写中…",
-    "castGroupRing": "环的颜色 = 群体"
+    "castGroupRing": "环的颜色 = 群体",
+    "castOriginEvidence": "资料中提到的",
+    "castOriginCircle": "他们身边的人",
+    "castOriginJoined": "中途加入",
+    "castGrowing": "模拟进行中 · 可能有新成员加入",
+    "castAround": "围绕 {name}",
+    "castJoinedRound": "第 {n} 轮加入",
+    "castAdded": "由 Hivemind 添加，资料中未提及"
   },
   "godseye": {
     "title": "来自 God's Eye View 的实时态势",

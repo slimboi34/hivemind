@@ -46,7 +46,7 @@
           @write="writeRecap"
         />
 
-        <CastTree :simulation-id="simulationId" :live="false" v-model:selected="selected" @loaded="onCast" />
+        <CastTree :simulation-id="simulationId" :live="isLive" v-model:selected="selected" @loaded="onCast" />
 
         <HealthBadge v-if="dynamics?.health" :health="dynamics.health" />
 
