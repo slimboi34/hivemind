@@ -99,6 +99,43 @@ identical to upstream.
     `uploads/simulations/<id>/recap.json` and keyed to the action log, so it is written
     once per run. "Rewrite" forces a new one.
 
+## Public site (Railway)
+
+Live at https://hivemind-production-25f13fa5.up.railway.app (Railway project `hivemind`,
+service `hivemind`, volume `hivemind-volume` at `/app/backend/uploads`). It runs on the
+owner's Anthropic and Zep keys, so `HIVEMIND_PUBLIC=1` turns on spend and safety limits
+(`backend/app/public_mode.py`):
+
+- New runs: `HIVEMIND_RUNS_PER_DAY` (5) shared by everyone, `HIVEMIND_RUNS_PER_VISITOR` (1)
+  per visitor IP per UTC day, none while a simulation is running. Rounds are capped at
+  `OASIS_DEFAULT_MAX_ROUNDS` (10) whatever the caller asks for.
+- Each paid step (graph build, simulation create/prepare/start, report) works once, and only
+  on runs started on the site. Earlier runs are read-only.
+- Chat with agents or the report agent: `HIVEMIND_CHATS_PER_VISITOR` (20) per visitor and
+  `HIVEMIND_CHATS_PER_DAY` (150) in total.
+- Off on the public site: deletes, resets, stop/close, forced regeneration (except the run
+  page's own start), briefing/recap rewrites, the God's Eye View connector, report tool
+  endpoints, script downloads.
+- Finished runs keep their agents alive for `HIVEMIND_ENV_LIFETIME_MINUTES` (20), then close.
+- Usage is kept in `uploads/public_quota.json`; `GET /api/public/status` shows what is left.
+- Visitors are told apart by `X-Real-IP`. Railway's edge overwrites it and
+  `X-Forwarded-For` (whose last entry is the shared edge node, not the visitor).
+- AGPL: `/source.tar.gz` serves the source the image was built from; the header links to it.
+- The home page says runs are public. Everyone's runs appear in the history list.
+
+Build: `deploy/Dockerfile` (selected by the service variable
+`RAILWAY_DOCKERFILE_PATH=deploy/Dockerfile`; the root `Dockerfile` is the local dev image).
+It builds the frontend with `VITE_PUBLIC=1` and `VITE_API_BASE_URL=/`, installs CPU-only
+torch (the lockfile's Linux torch pulls ~3 GB of CUDA), and Flask serves `frontend/dist`.
+The twhin-bert model cache lives on the volume (`HF_HOME`).
+
+Deploy: `railway up --detach -s hivemind` from the repo root (it honours `.gitignore`, so
+`.env`, local runs and `linkedin/` stay local). Keys are service variables, never files.
+
+History: earlier local runs are copied up with the owner-only `POST /api/admin/import`
+(header `X-Admin-Token`, a tar.gz of `projects/`, `simulations/`, `reports/`). The token is
+the `HIVEMIND_ADMIN_TOKEN` service variable; a copy is in `~/.config/hivemind/railway.env`.
+
 ## Re-engineering candidates
 
 The full review of how agents are created and how the system is put together, with a ranked

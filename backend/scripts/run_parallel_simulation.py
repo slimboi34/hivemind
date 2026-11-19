@@ -72,6 +72,7 @@ import multiprocessing
 import random
 import signal
 import sqlite3
+import time
 import warnings
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
@@ -1701,8 +1702,18 @@ async def main():
         ipc_handler.update_status("alive")
         
         # 等待命令循环（使用全局 _shutdown_event）
+        # HIVEMIND_ENV_LIFETIME_MINUTES (public site): close the kept-alive agents after this
+        # long so finished runs do not hold memory forever. 0 or unset keeps them until closed.
+        try:
+            lifetime_min = float(os.environ.get('HIVEMIND_ENV_LIFETIME_MINUTES') or 0)
+        except ValueError:
+            lifetime_min = 0
+        env_deadline = time.monotonic() + lifetime_min * 60 if lifetime_min > 0 else None
         try:
             while not _shutdown_event.is_set():
+                if env_deadline and time.monotonic() > env_deadline:
+                    log_manager.info(f"Agents kept alive for {lifetime_min:g} minutes; closing the environment.")
+                    break
                 should_continue = await ipc_handler.process_commands()
                 if not should_continue:
                     break

@@ -202,7 +202,7 @@
                   :disabled="loading"
                 ></textarea>
               </div>
-              <GodsEyeImport @add-file="file => addFiles([file])" />
+              <GodsEyeImport v-if="!isPublic" @add-file="file => addFiles([file])" />
 
               <p class="evidence-note" :class="{ ready: hasEvidence }">
                 <template v-if="hasEvidence">{{ $t('home.evidenceReady') }}</template>
@@ -212,6 +212,10 @@
 
             <!-- 启动按钮 -->
             <div class="console-section btn-section">
+              <p v-if="isPublic && publicStatus" class="public-note" role="note">
+                <strong>{{ $t('home.publicRunsLeft', { left: publicStatus.runs_left_today, total: publicStatus.runs_per_day }) }}</strong>
+                {{ $t('home.publicNote', { rounds: publicStatus.max_rounds }) }}
+              </p>
               <button 
                 class="start-engine-btn"
                 @click="startSimulation"
@@ -233,12 +237,26 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
 import AppHeader from '../components/AppHeader.vue'
 import HivemindMark from '../components/HivemindMark.vue'
 import GodsEyeImport from '../components/GodsEyeImport.vue'
+import service from '../api/index.js'
+
+// Public site: the shared daily quota, shown under the Run button.
+const isPublic = import.meta.env.VITE_PUBLIC === '1'
+const publicStatus = ref(null)
+onMounted(async () => {
+  if (!isPublic) return
+  try {
+    const res = await service.get('/api/public/status')
+    publicStatus.value = res.data
+  } catch {
+    publicStatus.value = null
+  }
+})
 
 const router = useRouter()
 
@@ -873,6 +891,17 @@ const startSimulation = () => {
   background: var(--hm-surface);
   color: var(--hm-ink);
   box-shadow: var(--hm-shadow-xs);
+}
+
+.public-note {
+  margin: 0 0 var(--hm-space-3, 12px);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--hm-ink-3, #555048);
+}
+.public-note strong {
+  color: var(--hm-ink, #16140F);
+  font-weight: 500;
 }
 
 .evidence-note {

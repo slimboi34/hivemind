@@ -34,7 +34,7 @@
     <div class="hm-nav__right">
       <slot />
       <LanguageSwitcher />
-      <a class="hm-nav__link" :href="sourceUrl" target="_blank" rel="noopener">{{ $t('nav.visitGithub') }}</a>
+      <a class="hm-nav__link" :href="sourceUrl" target="_blank" rel="noopener">{{ isPublic ? $t('nav.source') : $t('nav.visitGithub') }}</a>
     </div>
   </header>
 </template>
@@ -44,7 +44,8 @@ import LanguageSwitcher from './LanguageSwitcher.vue'
 import markOnDark from '../assets/brand/mark-on-dark.svg'
 
 // Hivemind's own source (AGPL-3.0: users of a hosted instance are offered the source).
-const sourceUrl = 'https://github.com/slimboi34/hivemind'
+const isPublic = import.meta.env.VITE_PUBLIC === '1'
+const sourceUrl = isPublic ? '/source.tar.gz' : 'https://github.com/slimboi34/hivemind'
 
 defineProps({
   step: { type: Number, default: 0 },

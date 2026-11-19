@@ -21,3 +21,13 @@ frontend/dist
 frontend/.vite
 
 backend/uploads
+
+# Local-only material: marketing captures, logs, agent notes
+linkedin
+backend/logs
+backend/log
+*.log
+.claude
+.playwright-mcp
+.env.*
+!.env.example

@@ -30,7 +30,8 @@
     "description": "Hivemind deploys a swarm of AI agents into a simulated internet built around your situation and reports how each group reacts."
   },
   "nav": {
-    "visitGithub": "GitHub"
+    "visitGithub": "GitHub",
+    "source": "Source"
   },
   "home": {
     "tagline": "Social swarm simulation",
@@ -82,7 +83,9 @@
     "pastePlaceholder": "Paste an article, a memo, a press release or your own notes.",
     "noEvidenceTitle": "No evidence? Just run it.",
     "noEvidenceNote": "Hivemind will write a background brief from what its AI model already knows about the topic. That can be out of date, so add documents for anything recent or private.",
-    "evidenceReady": "Hivemind will build the run from your evidence."
+    "evidenceReady": "Hivemind will build the run from your evidence.",
+    "publicRunsLeft": "{left} of {total} free runs left today.",
+    "publicNote": "Runs on this site are public and appear in the history below, so do not paste anything private. Each run is capped at {rounds} rounds."
   },
   "main": {
     "layoutGraph": "Graph",

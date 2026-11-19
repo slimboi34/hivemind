@@ -1585,6 +1585,10 @@ def start_simulation():
         # e.g. 168 rounds (one simulated week). Set it to 0 to disable the cap.
         if max_rounds is None and Config.OASIS_DEFAULT_MAX_ROUNDS > 0:
             max_rounds = Config.OASIS_DEFAULT_MAX_ROUNDS
+        # On the public site the cap is a ceiling, not just a default.
+        from ..public_mode import enabled as _public_enabled
+        if _public_enabled() and Config.OASIS_DEFAULT_MAX_ROUNDS > 0:
+            max_rounds = min(max_rounds or Config.OASIS_DEFAULT_MAX_ROUNDS, Config.OASIS_DEFAULT_MAX_ROUNDS)
 
         if platform not in ['twitter', 'reddit', 'parallel']:
             return jsonify({
