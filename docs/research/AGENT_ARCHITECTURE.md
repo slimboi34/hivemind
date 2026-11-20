@@ -91,7 +91,7 @@ per platform, and every one of those calls carries that agent's full persona.
   failed and a salvage path kept only the bio and persona text, dropping age, gender, country,
   profession and interests without an error. *Fixed.*
 - **Country was requested in Chinese** whatever the run's language; the stored English runs
-  have 41 and 45 agents with `美国`. *Fixed.*
+  have 41 and 45 agents whose country is "United States" written in Chinese. *Fixed.*
 - **Personas are prose only.** Position, relationships and what the agent already did are
   buried in 700 words. Nothing downstream can read them, compare them or check them.
 - **Context is thin and generic.** Every agent's Zep search uses the same query template, and

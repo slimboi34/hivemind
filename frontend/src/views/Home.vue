@@ -1,10 +1,10 @@
 <template>
   <div class="home-container">
-    <!-- 顶部导航栏 -->
+    <!-- Top navigation bar -->
     <AppHeader />
 
     <div class="main-content">
-      <!-- 上半部分：Hero 区域 -->
+      <!-- Upper section: hero area -->
       <section class="hero-section">
         <div class="hero-left">
           <div class="tag-row">
@@ -34,7 +34,7 @@
         </div>
         
         <div class="hero-right">
-          <!-- Logo 区域 -->
+          <!-- Logo area -->
           <div class="logo-container">
             <HivemindMark class="hero-logo" :size="136" animated />
           </div>
@@ -45,9 +45,9 @@
         </div>
       </section>
 
-      <!-- 下半部分：双栏布局 -->
+      <!-- Lower section: two-column layout -->
       <section class="dashboard-section">
-        <!-- 左栏：状态与步骤 -->
+        <!-- Left column: status and steps -->
         <div class="left-panel">
           <div class="panel-header">
             <span class="status-dot" aria-hidden="true"></span> {{ $t('home.systemStatus') }}
@@ -58,7 +58,7 @@
             {{ $t('home.systemReadyDesc') }}
           </p>
           
-          <!-- 数据指标卡片 -->
+          <!-- Metric cards -->
           <div class="metrics-row">
             <div class="metric-card">
               <div class="metric-value">{{ $t('home.metricLowCost') }}</div>
@@ -70,7 +70,7 @@
             </div>
           </div>
 
-          <!-- 项目模拟步骤介绍 (新增区域) -->
+          <!-- Overview of the simulation steps (new section) -->
           <div class="steps-container">
             <div class="steps-header">
                <span class="diamond-icon" aria-hidden="true"></span> {{ $t('home.workflowSequence') }}
@@ -115,7 +115,7 @@
           </div>
         </div>
 
-        <!-- 右栏：交互控制台 -->
+        <!-- Right column: interactive console -->
         <div class="right-panel">
           <div class="console-box">
             <!-- 01: the question. It is the only thing a run needs. -->
@@ -210,7 +210,7 @@
               </p>
             </div>
 
-            <!-- 启动按钮 -->
+            <!-- Start button -->
             <div class="console-section btn-section">
               <p v-if="publicBlock" class="public-note public-note--blocked" role="status">{{ publicBlock }}</p>
               <p v-if="isPublic && publicStatus" class="public-note" role="note">
@@ -231,7 +231,7 @@
         </div>
       </section>
 
-      <!-- 历史项目数据库 -->
+      <!-- Past projects database -->
       <HistoryDatabase class="home-history" />
     </div>
   </div>
@@ -278,7 +278,7 @@ const publicBlock = computed(() => {
 
 const router = useRouter()
 
-// 表单数据
+// Form data
 const formData = ref({
   simulationRequirement: '',
   seedText: ''
@@ -288,36 +288,36 @@ const formData = ref({
 // if the user fills in both; neither is required.
 const evidenceMode = ref('upload')
 
-// 文件列表
+// File list
 const files = ref([])
 
-// 状态
+// State
 const loading = ref(false)
 const error = ref('')
 const isDragOver = ref(false)
 
-// 文件输入引用
+// File input ref
 const fileInput = ref(null)
 
-// 计算属性:是否可以提交
+// Computed: whether the form can be submitted
 // Only the question is required. With no evidence the backend writes a background brief.
 const canSubmit = computed(() => formData.value.simulationRequirement.trim() !== '')
 const hasEvidence = computed(() => files.value.length > 0 || formData.value.seedText.trim() !== '')
 
-// 触发文件选择
+// Open the file picker
 const triggerFileInput = () => {
   if (!loading.value) {
     fileInput.value?.click()
   }
 }
 
-// 处理文件选择
+// Handle file selection
 const handleFileSelect = (event) => {
   const selectedFiles = Array.from(event.target.files)
   addFiles(selectedFiles)
 }
 
-// 处理拖拽相关
+// Drag-and-drop handling
 const handleDragOver = (e) => {
   if (!loading.value) {
     isDragOver.value = true
@@ -336,7 +336,7 @@ const handleDrop = (e) => {
   addFiles(droppedFiles)
 }
 
-// 添加文件
+// Add files
 const addFiles = (newFiles) => {
   const validFiles = newFiles.filter(file => {
     const ext = file.name.split('.').pop().toLowerCase()
@@ -345,12 +345,12 @@ const addFiles = (newFiles) => {
   files.value.push(...validFiles)
 }
 
-// 移除文件
+// Remove a file
 const removeFile = (index) => {
   files.value.splice(index, 1)
 }
 
-// 滚动到底部
+// Scroll to the bottom
 const scrollToBottom = () => {
   window.scrollTo({
     top: document.body.scrollHeight,
@@ -358,15 +358,15 @@ const scrollToBottom = () => {
   })
 }
 
-// 开始模拟 - 立即跳转，API调用在Process页面进行
+// Start the simulation: navigate straight away; the API calls happen on the Process route
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
   
-  // 存储待上传的数据
+  // Store the data waiting to be uploaded
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
     setPendingUpload(files.value, formData.value.simulationRequirement, formData.value.seedText.trim())
     
-    // 立即跳转到Process页面（使用特殊标识表示新建项目）
+    // Go straight to the Process route (the special ID 'new' marks a new project)
     router.push({
       name: 'Process',
       params: { projectId: 'new' }
