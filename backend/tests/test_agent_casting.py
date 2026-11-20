@@ -24,7 +24,7 @@ def test_person_prompt_lets_the_model_fall_back_to_an_organisation_account():
     prompt = gen._build_individual_persona_prompt("Wedbush", "SellSideAnalyst", "A brokerage.", {}, "")
     assert '"other"' in prompt
     for build in (gen._build_individual_persona_prompt, gen._build_group_persona_prompt):
-        assert "使用中文" not in build("X", "Person", "", {}, "")    # country follows the run's language
+        assert "Chinese" not in build("X", "Person", "", {}, "")    # country follows the run's language
 
 
 def agent(agent_id, name, entity_type, influence=1.0):
