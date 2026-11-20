@@ -292,7 +292,7 @@
     "toolInterviewSubAgentDesc": "并行采访模拟个体，汇总他们的观点。",
     "profileBio": "简介",
     "chatEmptyReportAgent": "就报告中的任何发现向报告智能体提问。",
-    "agentsOffline": "这些模拟人物已离线。只有在模拟仍在运行时才能采访他们（公共站点上为运行结束后约 20 分钟）。请改为询问报告智能体：它仍然可以检索他们说过的所有内容。",
+    "agentsOffline": "这些模拟人物已离线。只有在模拟仍在运行时才能采访他们（公共站点上为运行结束后约 45 分钟）。请改为询问报告智能体：它仍然可以检索他们说过的所有内容。",
     "chatEmptyAgent": "选择一个智能体，询问其如何看待事件的发展。",
     "chatInputPlaceholder": "输入您的问题...",
     "selectSurveyTarget": "选择调查对象",

@@ -107,7 +107,7 @@ These come from the CAMEL-AI OASIS engine and how Hivemind configures it.
   a preview of the future and require every claim to come from its graph searches and
   interviews. Treat its confidence as the framing of the prompt, not as evidence of accuracy.
 - **Interviews need live agents.** Agents can only be interviewed while their run's environment
-  is up (20 minutes after the last round on the public site). After that, the report agent can
+  is up (45 minutes after the last round on the public site). After that, the report agent can
   still search everything they did through the graph.
 - **The PDF uses a Latin-1 font.** Text in scripts outside Latin-1 (for example Chinese) cannot
   be printed in the briefing PDF.

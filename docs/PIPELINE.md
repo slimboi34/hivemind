@@ -523,7 +523,7 @@ be listed with the history endpoint. They are excluded from analytics, so asking
 never changes a run's numbers.
 
 Interviews need the environment alive (`env_status.json` says `alive`). On the public site it
-closes 20 minutes after the run ends. The Interaction page checks this first: when the run's
+closes 45 minutes after the run ends. The Interaction page checks this first: when the run's
 people are offline it says so, disables the interview and survey inputs, and points to the
 report agent, which still works because it searches the graph.
 

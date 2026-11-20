@@ -37,7 +37,7 @@ RUN tar czf /opt/hivemind-source.tar.gz \
 ENV HIVEMIND_PUBLIC=1 \
     HIVEMIND_STATIC_DIR=/app/frontend/dist \
     HIVEMIND_SOURCE_ARCHIVE=/opt/hivemind-source.tar.gz \
-    HIVEMIND_ENV_LIFETIME_MINUTES=20 \
+    HIVEMIND_ENV_LIFETIME_MINUTES=45 \
     FLASK_HOST=0.0.0.0 \
     HF_HOME=/app/backend/uploads/.hf
 WORKDIR /app/backend

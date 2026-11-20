@@ -144,7 +144,7 @@ and the IP that was chosen, for re-checking after any platform change.
      `backend/.venv`, `backend/uploads` and `node_modules`.
    - Sets `HIVEMIND_PUBLIC=1`, `HIVEMIND_STATIC_DIR=/app/frontend/dist`,
      `HIVEMIND_SOURCE_ARCHIVE=/opt/hivemind-source.tar.gz`,
-     `HIVEMIND_ENV_LIFETIME_MINUTES=20`, `FLASK_HOST=0.0.0.0` and
+     `HIVEMIND_ENV_LIFETIME_MINUTES=45`, `FLASK_HOST=0.0.0.0` and
      `HF_HOME=/app/backend/uploads/.hf`.
    - Runs `.venv/bin/python run.py` from `/app/backend`.
 
@@ -246,7 +246,7 @@ Every limit below exists because the site spends the owner's money:
 - **No repeat spending.** Every paid step works once per run; forced regeneration is off;
   briefings and recaps are written once (at most 3 times) and cached.
 - **Metered conversation.** 20 chats or interviews per visitor and 150 in total per day.
-- **Freed memory.** Kept-alive agents close after 20 minutes. The recommender embeds in small
+- **Freed memory.** Kept-alive agents close after 45 minutes (long enough for the report agent's interviews and a visitor's own questions). The recommender embeds in small
   batches, so a long run does not exhaust the container.
 - **No open-ended endpoints.** Ask-everyone interviews, debug tools and the external
   connector are off.
