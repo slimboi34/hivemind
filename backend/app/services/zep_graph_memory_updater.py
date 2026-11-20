@@ -1,6 +1,6 @@
 """
-Zep图谱记忆更新服务
-将模拟中的Agent活动动态更新到Zep图谱中
+Zep graph memory update service
+Feeds agent activity from a running simulation into the Zep graph as it happens.
 """
 
 import time
@@ -24,7 +24,7 @@ logger = get_logger('hivemind.zep_graph_memory_updater')
 
 @dataclass
 class AgentActivity:
-    """Agent活动记录"""
+    """Record of one agent activity"""
     platform: str           # twitter / reddit
     agent_id: int
     agent_name: str
@@ -35,12 +35,12 @@ class AgentActivity:
     
     def to_episode_text(self) -> str:
         """
-        将活动转换为可以发送给Zep的文本描述
+        Turn the activity into a text description that can be sent to Zep
         
-        采用自然语言描述格式，让Zep能够从中提取实体和关系
-        不添加模拟相关的前缀，避免误导图谱更新
+        Uses plain natural-language descriptions so Zep can extract entities and relationships from them.
+        No simulation-specific prefix is added, so the graph update is not misled.
         """
-        # 根据不同的动作类型生成不同的描述
+        # Build a different description for each action type
         action_descriptions = {
             "CREATE_POST": self._describe_create_post,
             "LIKE_POST": self._describe_like_post,
@@ -73,7 +73,7 @@ class AgentActivity:
         return "published a post"
     
     def _describe_like_post(self) -> str:
-        """点赞帖子 - 包含帖子原文和作者信息"""
+        """Like a post - includes the post text and its author"""
         post_content = self.action_args.get("post_content", "")
         post_author = self.action_args.get("post_author_name", "")
         
@@ -86,7 +86,7 @@ class AgentActivity:
         return "liked a post"
     
     def _describe_dislike_post(self) -> str:
-        """踩帖子 - 包含帖子原文和作者信息"""
+        """Dislike a post - includes the post text and its author"""
         post_content = self.action_args.get("post_content", "")
         post_author = self.action_args.get("post_author_name", "")
         
@@ -99,7 +99,7 @@ class AgentActivity:
         return "disliked a post"
     
     def _describe_repost(self) -> str:
-        """转发帖子 - 包含原帖内容和作者信息"""
+        """Repost - includes the original post text and its author"""
         original_content = self.action_args.get("original_content", "")
         original_author = self.action_args.get("original_author_name", "")
         
@@ -112,7 +112,7 @@ class AgentActivity:
         return "reposted a post"
     
     def _describe_quote_post(self) -> str:
-        """引用帖子 - 包含原帖内容、作者信息和引用评论"""
+        """Quote a post - includes the original post text, its author and the quote comment"""
         original_content = self.action_args.get("original_content", "")
         original_author = self.action_args.get("original_author_name", "")
         quote_content = self.action_args.get("quote_content", "") or self.action_args.get("content", "")
@@ -132,7 +132,7 @@ class AgentActivity:
         return base
     
     def _describe_follow(self) -> str:
-        """关注用户 - 包含被关注用户的名称"""
+        """Follow a user - includes the followed user's name"""
         target_user_name = self.action_args.get("target_user_name", "")
         
         if target_user_name:
@@ -140,7 +140,7 @@ class AgentActivity:
         return "followed a user"
     
     def _describe_create_comment(self) -> str:
-        """发表评论 - 包含评论内容和所评论的帖子信息"""
+        """Comment - includes the comment text and the post it replies to"""
         content = self.action_args.get("content", "")
         post_content = self.action_args.get("post_content", "")
         post_author = self.action_args.get("post_author_name", "")
@@ -156,7 +156,7 @@ class AgentActivity:
         return "left a comment"
     
     def _describe_like_comment(self) -> str:
-        """点赞评论 - 包含评论内容和作者信息"""
+        """Like a comment - includes the comment text and its author"""
         comment_content = self.action_args.get("comment_content", "")
         comment_author = self.action_args.get("comment_author_name", "")
         
@@ -169,7 +169,7 @@ class AgentActivity:
         return "liked a comment"
     
     def _describe_dislike_comment(self) -> str:
-        """踩评论 - 包含评论内容和作者信息"""
+        """Dislike a comment - includes the comment text and its author"""
         comment_content = self.action_args.get("comment_content", "")
         comment_author = self.action_args.get("comment_author_name", "")
         
@@ -182,17 +182,17 @@ class AgentActivity:
         return "disliked a comment"
     
     def _describe_search(self) -> str:
-        """搜索帖子 - 包含搜索关键词"""
+        """Search posts - includes the search query"""
         query = self.action_args.get("query", "") or self.action_args.get("keyword", "")
         return f'searched for "{query}"' if query else "ran a search"
     
     def _describe_search_user(self) -> str:
-        """搜索用户 - 包含搜索关键词"""
+        """Search users - includes the search query"""
         query = self.action_args.get("query", "") or self.action_args.get("username", "")
         return f'searched for user "{query}"' if query else "searched for users"
     
     def _describe_mute(self) -> str:
-        """屏蔽用户 - 包含被屏蔽用户的名称"""
+        """Mute a user - includes the muted user's name"""
         target_user_name = self.action_args.get("target_user_name", "")
         
         if target_user_name:
@@ -200,7 +200,7 @@ class AgentActivity:
         return "muted a user"
     
     def _describe_generic(self) -> str:
-        # 对于未知的动作类型，生成通用描述
+        # Fall back to a generic description for unknown action types
         return f"performed a {self.action_type} action"
 
 
@@ -220,28 +220,28 @@ class ZepIngestionStillProcessing(TimeoutError):
 
 class ZepGraphMemoryUpdater:
     """
-    Zep图谱记忆更新器
+    Zep graph memory updater
     
-    监控模拟的actions日志文件，将新的agent活动实时更新到Zep图谱中。
-    按平台分组，每累积BATCH_SIZE条活动后批量发送到Zep。
+    Watches the simulation's actions log files and pushes new agent activity into the Zep graph in real time.
+    Activities are grouped by platform and sent to Zep in a batch once BATCH_SIZE have accumulated.
     
-    所有有意义的行为都会被更新到Zep，action_args中会包含完整的上下文信息：
-    - 点赞/踩的帖子原文
-    - 转发/引用的帖子原文
-    - 关注/屏蔽的用户名
-    - 点赞/踩的评论原文
+    Every meaningful action is sent to Zep, and action_args carries the full context:
+    - the text of liked/disliked posts
+    - the text of reposted/quoted posts
+    - the usernames of followed/muted users
+    - the text of liked/disliked comments
     """
     
-    # 批量发送大小（每个平台累积多少条后发送）
+    # Batch size (how many activities accumulate per platform before sending)
     BATCH_SIZE = 5
     
-    # 平台名称映射（用于控制台显示）
+    # Platform display names (for console output)
     PLATFORM_DISPLAY_NAMES = {
         'twitter': 'Twitter',
         'reddit': 'Reddit',
     }
     
-    # 发送间隔（秒），避免请求过快
+    # Delay between sends in seconds, so requests are not sent too quickly
     SEND_INTERVAL = 0.5
     
     # Zep recommends keeping an episode below 10,000 characters. Leave room
@@ -255,11 +255,11 @@ class ZepGraphMemoryUpdater:
         simulation_id: Optional[str] = None,
     ):
         """
-        初始化更新器
+        Initialise the updater
         
         Args:
-            graph_id: Zep图谱ID
-            api_key: Zep API Key（可选，默认从配置读取）
+            graph_id: Zep graph ID
+            api_key: Zep API key (optional; read from config by default)
         """
         self.graph_id = graph_id
         self.simulation_id = simulation_id or "unknown"
@@ -270,10 +270,10 @@ class ZepGraphMemoryUpdater:
         
         self.client = get_zep_client(self.api_key)
         
-        # 活动队列
+        # Activity queue
         self._activity_queue: Queue = Queue()
         
-        # 按平台分组的活动缓冲区（每个平台各自累积到BATCH_SIZE后批量发送）
+        # Per-platform activity buffers (each platform accumulates up to BATCH_SIZE before a batch is sent)
         self._platform_buffers: Dict[str, List[AgentActivity]] = {
             'twitter': [],
             'reddit': [],
@@ -281,27 +281,27 @@ class ZepGraphMemoryUpdater:
         self._buffer_lock = threading.Lock()
         self._acceptance_lock = threading.Lock()
         
-        # 控制标志
+        # Control flags
         self._running = False
         self._worker_thread: Optional[threading.Thread] = None
         
-        # 统计
-        self._total_activities = 0  # 实际添加到队列的活动数
-        self._total_sent = 0        # 成功发送到Zep的批次数
-        self._total_items_sent = 0  # 成功发送到Zep的活动条数
-        self._failed_count = 0      # 发送失败的批次数
-        self._skipped_count = 0     # 被过滤跳过的活动数（DO_NOTHING）
+        # Statistics
+        self._total_activities = 0  # Activities actually added to the queue
+        self._total_sent = 0        # Batches successfully sent to Zep
+        self._total_items_sent = 0  # Activities successfully sent to Zep
+        self._failed_count = 0      # Batches that failed to send
+        self._skipped_count = 0     # Activities filtered out and skipped (DO_NOTHING)
         self._failed_batches: List[Dict[str, Any]] = []
         self._pending_episode_uuids: List[str] = []
         
         logger.info(f"ZepGraphMemoryUpdater initialised: graph_id={graph_id}, batch_size={self.BATCH_SIZE}")
     
     def _get_platform_display_name(self, platform: str) -> str:
-        """获取平台的显示名称"""
+        """Get the display name of a platform"""
         return self.PLATFORM_DISPLAY_NAMES.get(platform.lower(), platform)
     
     def start(self):
-        """启动后台工作线程"""
+        """Start the background worker thread"""
         if self._running:
             return
 
@@ -360,26 +360,26 @@ class ZepGraphMemoryUpdater:
     
     def add_activity(self, activity: AgentActivity):
         """
-        添加一个agent活动到队列
+        Add an agent activity to the queue
         
-        所有有意义的行为都会被添加到队列，包括：
-        - CREATE_POST（发帖）
-        - CREATE_COMMENT（评论）
-        - QUOTE_POST（引用帖子）
-        - SEARCH_POSTS（搜索帖子）
-        - SEARCH_USER（搜索用户）
-        - LIKE_POST/DISLIKE_POST（点赞/踩帖子）
-        - REPOST（转发）
-        - FOLLOW（关注）
-        - MUTE（屏蔽）
-        - LIKE_COMMENT/DISLIKE_COMMENT（点赞/踩评论）
+        Every meaningful action is added to the queue, including:
+        - CREATE_POST (post)
+        - CREATE_COMMENT (comment)
+        - QUOTE_POST (quote a post)
+        - SEARCH_POSTS (search posts)
+        - SEARCH_USER (search users)
+        - LIKE_POST/DISLIKE_POST (like/dislike a post)
+        - REPOST (repost)
+        - FOLLOW (follow)
+        - MUTE (mute)
+        - LIKE_COMMENT/DISLIKE_COMMENT (like/dislike a comment)
         
-        action_args中会包含完整的上下文信息（如帖子原文、用户名等）。
+        action_args carries the full context (such as the post text and usernames).
         
         Args:
-            activity: Agent活动记录
+            activity: agent activity record
         """
-        # 跳过DO_NOTHING类型的活动
+        # Skip DO_NOTHING activities
         if activity.action_type == "DO_NOTHING":
             self._skipped_count += 1
             return
@@ -393,13 +393,13 @@ class ZepGraphMemoryUpdater:
     
     def add_activity_from_dict(self, data: Dict[str, Any], platform: str):
         """
-        从字典数据添加活动
+        Add an activity from dict data
         
         Args:
-            data: 从actions.jsonl解析的字典数据
-            platform: 平台名称 (twitter/reddit)
+            data: dict parsed from actions.jsonl
+            platform: platform name (twitter/reddit)
         """
-        # 跳过事件类型的条目
+        # Skip event-type entries
         if "event_type" in data:
             return
         if data.get("success") is False:
@@ -419,15 +419,15 @@ class ZepGraphMemoryUpdater:
         self.add_activity(activity)
     
     def _worker_loop(self, locale: str = 'en'):
-        """后台工作循环 - 按平台批量发送活动到Zep"""
+        """Background worker loop - sends activities to Zep in per-platform batches"""
         set_locale(locale)
         while self._running or not self._activity_queue.empty():
             try:
-                # 尝试从队列获取活动（超时1秒）
+                # Try to take an activity from the queue (1 second timeout)
                 try:
                     activity = self._activity_queue.get(timeout=1)
                     
-                    # 将活动添加到对应平台的缓冲区
+                    # Add the activity to its platform's buffer
                     platform = activity.platform.lower()
                     batch = None
                     with self._buffer_lock:
@@ -435,7 +435,7 @@ class ZepGraphMemoryUpdater:
                             self._platform_buffers[platform] = []
                         self._platform_buffers[platform].append(activity)
                         
-                        # 检查该平台是否达到批量大小
+                        # Check whether this platform has reached the batch size
                         if len(self._platform_buffers[platform]) >= self.BATCH_SIZE:
                             batch = self._platform_buffers[platform][:self.BATCH_SIZE]
                             self._platform_buffers[platform] = self._platform_buffers[platform][self.BATCH_SIZE:]
@@ -488,11 +488,11 @@ class ZepGraphMemoryUpdater:
         deadline: float | None = None,
     ) -> int:
         """
-        批量发送活动到Zep图谱（合并为一条文本）
+        Send a batch of activities to the Zep graph (merged into a single text)
         
         Args:
-            activities: Agent活动列表
-            platform: 平台名称
+            activities: list of agent activities
+            platform: platform name
         """
         if not activities:
             return 0
@@ -569,8 +569,8 @@ class ZepGraphMemoryUpdater:
             return datetime.now().astimezone().isoformat()
 
     def _flush_remaining(self, *, deadline: float | None = None):
-        """发送队列和缓冲区中剩余的活动"""
-        # 首先处理队列中剩余的活动，添加到缓冲区
+        """Send the activities still left in the queue and buffers"""
+        # First move the activities left in the queue into the buffers
         while not self._activity_queue.empty():
             try:
                 activity = self._activity_queue.get_nowait()
@@ -629,30 +629,30 @@ class ZepGraphMemoryUpdater:
         self._pending_episode_uuids = []
     
     def get_stats(self) -> Dict[str, Any]:
-        """获取统计信息"""
+        """Get statistics"""
         with self._buffer_lock:
             buffer_sizes = {p: len(b) for p, b in self._platform_buffers.items()}
         
         return {
             "graph_id": self.graph_id,
             "batch_size": self.BATCH_SIZE,
-            "total_activities": self._total_activities,  # 添加到队列的活动总数
-            "batches_sent": self._total_sent,            # 成功发送的批次数
-            "items_sent": self._total_items_sent,        # 成功发送的活动条数
-            "failed_count": self._failed_count,          # 发送失败的批次数
+            "total_activities": self._total_activities,  # Total activities added to the queue
+            "batches_sent": self._total_sent,            # Batches sent successfully
+            "items_sent": self._total_items_sent,        # Activities sent successfully
+            "failed_count": self._failed_count,          # Batches that failed to send
             "pending_episode_count": len(self._pending_episode_uuids),
-            "skipped_count": self._skipped_count,        # 被过滤跳过的活动数（DO_NOTHING）
+            "skipped_count": self._skipped_count,        # Activities filtered out and skipped (DO_NOTHING)
             "queue_size": self._activity_queue.qsize(),
-            "buffer_sizes": buffer_sizes,                # 各平台缓冲区大小
+            "buffer_sizes": buffer_sizes,                # Buffer size per platform
             "running": self._running,
         }
 
 
 class ZepGraphMemoryManager:
     """
-    管理多个模拟的Zep图谱记忆更新器
+    Manages the Zep graph memory updaters of several simulations
     
-    每个模拟可以有自己的更新器实例
+    Each simulation can have its own updater instance.
     """
     
     _updaters: Dict[str, ZepGraphMemoryUpdater] = {}
@@ -661,17 +661,17 @@ class ZepGraphMemoryManager:
     @classmethod
     def create_updater(cls, simulation_id: str, graph_id: str) -> ZepGraphMemoryUpdater:
         """
-        为模拟创建图谱记忆更新器
+        Create a graph memory updater for a simulation
         
         Args:
-            simulation_id: 模拟ID
-            graph_id: Zep图谱ID
+            simulation_id: simulation ID
+            graph_id: Zep graph ID
             
         Returns:
-            ZepGraphMemoryUpdater实例
+            ZepGraphMemoryUpdater instance
         """
         with cls._lock:
-            # 如果已存在，先停止旧的
+            # If one already exists, stop the old one first
             if simulation_id in cls._updaters:
                 cls._updaters[simulation_id].stop()
             
@@ -688,7 +688,7 @@ class ZepGraphMemoryManager:
     
     @classmethod
     def get_updater(cls, simulation_id: str) -> Optional[ZepGraphMemoryUpdater]:
-        """获取模拟的更新器"""
+        """Get the updater for a simulation"""
         with cls._lock:
             return cls._updaters.get(simulation_id)
 
@@ -768,13 +768,13 @@ class ZepGraphMemoryManager:
                     + (f" ({still_processing} episode(s) still processing in Zep)" if still_processing else ""))
         return still_processing
     
-    # 防止 stop_all 重复调用的标志
+    # Flag that stops stop_all from running twice
     _stop_all_done = False
     
     @classmethod
     def stop_all(cls):
-        """停止所有更新器"""
-        # 防止重复调用
+        """Stop every updater"""
+        # Guard against repeated calls
         if cls._stop_all_done:
             return
 
@@ -808,7 +808,7 @@ class ZepGraphMemoryManager:
     
     @classmethod
     def get_all_stats(cls) -> Dict[str, Dict[str, Any]]:
-        """获取所有更新器的统计信息"""
+        """Get statistics for every updater"""
         return {
             sim_id: updater.get_stats() 
             for sim_id, updater in cls._updaters.items()
