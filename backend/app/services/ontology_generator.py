@@ -636,15 +636,15 @@ class OntologyGenerator:
         """
         code_lines = [
             '"""',
-            '自定义实体类型定义',
-            '由Hivemind自动生成，用于社会舆论模拟',
+            'Custom entity type definitions',
+            'Generated automatically by Hivemind for social opinion simulation',
             '"""',
             '',
             'from pydantic import Field',
             'from zep_cloud.external_clients.ontology import EntityModel, EntityText, EdgeModel',
             '',
             '',
-            '# ============== 实体类型定义 ==============',
+            '# ============== Entity type definitions ==============',
             '',
         ]
         
@@ -671,7 +671,7 @@ class OntologyGenerator:
             code_lines.append('')
             code_lines.append('')
         
-        code_lines.append('# ============== 关系类型定义 ==============')
+        code_lines.append('# ============== Relationship type definitions ==============')
         code_lines.append('')
         
         # 生成关系类型
@@ -700,7 +700,7 @@ class OntologyGenerator:
             code_lines.append('')
         
         # 生成类型字典
-        code_lines.append('# ============== 类型配置 ==============')
+        code_lines.append('# ============== Type configuration ==============')
         code_lines.append('')
         code_lines.append('ENTITY_TYPES = {')
         for entity in ontology.get("entity_types", []):

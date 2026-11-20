@@ -283,7 +283,7 @@ class SimulationRunner:
             # failure skip the authoritative run-state finalization or Zep
             # ingestion drain.
             logger.error(
-                "同步模拟状态失败: simulation_id=%s, status=%s, error=%s",
+                "Failed to sync simulation status: simulation_id=%s, status=%s, error=%s",
                 simulation_id,
                 runner_status.value,
                 sync_error,
@@ -355,7 +355,7 @@ class SimulationRunner:
             
             return state
         except Exception as e:
-            logger.error(f"加载运行状态失败: {str(e)}")
+            logger.error(f"Failed to load run state: {str(e)}")
             return None
     
     @classmethod
@@ -399,7 +399,7 @@ class SimulationRunner:
         config_path = os.path.join(sim_dir, "simulation_config.json")
         
         if not os.path.exists(config_path):
-            raise ValueError(f"模拟配置不存在，请先调用 /prepare 接口")
+            raise ValueError(f"Simulation config not found. Call the /prepare endpoint first.")
         
         with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
@@ -415,7 +415,7 @@ class SimulationRunner:
             original_rounds = total_rounds
             total_rounds = min(total_rounds, max_rounds)
             if total_rounds < original_rounds:
-                logger.info(f"轮数已截断: {original_rounds} -> {total_rounds} (max_rounds={max_rounds})")
+                logger.info(f"Rounds capped: {original_rounds} -> {total_rounds} (max_rounds={max_rounds})")
         
         state = SimulationRunState(
             simulation_id=simulation_id,
@@ -439,23 +439,23 @@ class SimulationRunner:
             if (
                 existing and existing.runner_status in active_statuses
             ) or ZepGraphMemoryManager.get_updater(simulation_id) is not None:
-                raise ValueError(f"模拟已在运行或结束处理中: {simulation_id}")
+                raise ValueError(f"Simulation is already running or still finishing: {simulation_id}")
             cls._save_run_state(state)
         
         # 如果启用图谱记忆更新，创建更新器
         if enable_graph_memory_update:
             if not graph_id:
-                raise ValueError("启用图谱记忆更新时必须提供 graph_id")
+                raise ValueError("graph_id is required when graph memory updates are enabled")
             
             try:
                 ZepGraphMemoryManager.create_updater(simulation_id, graph_id)
                 cls._graph_memory_enabled[simulation_id] = True
-                logger.info(f"已启用图谱记忆更新: simulation_id={simulation_id}, graph_id={graph_id}")
+                logger.info(f"Graph memory updates enabled: simulation_id={simulation_id}, graph_id={graph_id}")
             except Exception as e:
-                logger.error(f"创建图谱记忆更新器失败: {e}")
+                logger.error(f"Failed to create graph memory updater: {e}")
                 cls._graph_memory_enabled[simulation_id] = False
                 state.runner_status = RunnerStatus.FAILED
-                state.error = f"Zep图谱更新器初始化失败: {e}"
+                state.error = f"Failed to initialise the Zep graph updater: {e}"
                 with cls._finalization_lock(simulation_id):
                     cls._save_run_state(state)
                     cls._sync_simulation_status(
@@ -492,9 +492,9 @@ class SimulationRunner:
             state.runner_status = RunnerStatus.FAILED
             state.twitter_running = False
             state.reddit_running = False
-            state.error = f"脚本不存在: {script_path}"
+            state.error = f"Script not found: {script_path}"
             if cleanup_error is not None:
-                state.error += f"; Zep图谱写入清理失败: {cleanup_error}"
+                state.error += f"; Zep graph write cleanup failed: {cleanup_error}"
             with cls._finalization_lock(simulation_id):
                 cls._save_run_state(state)
                 cls._sync_simulation_status(
@@ -579,7 +579,7 @@ class SimulationRunner:
                 )
                 monitor_thread.start()
             
-            logger.info(f"模拟启动成功: {simulation_id}, pid={process.pid}, platform={platform}")
+            logger.info(f"Simulation started: {simulation_id}, pid={process.pid}, platform={platform}")
             
         except Exception as e:
             cleanup_errors = []
@@ -587,7 +587,7 @@ class SimulationRunner:
                 try:
                     cls._terminate_process(process, simulation_id)
                 except Exception as error:
-                    cleanup_errors.append(f"子进程终止失败: {error}")
+                    cleanup_errors.append(f"Failed to terminate subprocess: {error}")
             cls._processes.pop(simulation_id, None)
             cls._monitor_threads.pop(simulation_id, None)
             cls._action_queues.pop(simulation_id, None)
@@ -597,13 +597,13 @@ class SimulationRunner:
                 try:
                     main_log_file.close()
                 except Exception as error:
-                    cleanup_errors.append(f"日志关闭失败: {error}")
+                    cleanup_errors.append(f"Failed to close log: {error}")
             if cls._graph_memory_enabled.get(simulation_id, False):
                 try:
                     ZepGraphMemoryManager.stop_updater(simulation_id)
                     cls._graph_memory_enabled.pop(simulation_id, None)
                 except Exception as error:
-                    cleanup_errors.append(f"Zep图谱写入清理失败: {error}")
+                    cleanup_errors.append(f"Zep graph write cleanup failed: {error}")
             state.runner_status = RunnerStatus.FAILED
             state.twitter_running = False
             state.reddit_running = False
@@ -669,7 +669,7 @@ class SimulationRunner:
             exit_code = process.returncode
             
         except Exception as e:
-            logger.error(f"监控线程异常: {simulation_id}, error={str(e)}")
+            logger.error(f"Monitor thread error: {simulation_id}, error={str(e)}")
             monitor_error = e
         
         finally:
@@ -706,7 +706,7 @@ class SimulationRunner:
                         except Exception:
                             pass
                         error_message = (
-                            f"进程退出码: {exit_code}, 错误: {error_info}"
+                            f"Process exit code: {exit_code}, error: {error_info}"
                         )
 
                     state.twitter_running = False
@@ -726,13 +726,13 @@ class SimulationRunner:
                             ZepGraphMemoryManager.stop_updater(simulation_id)
                             cls._graph_memory_enabled.pop(simulation_id, None)
                             logger.info(
-                                "已停止图谱记忆更新: simulation_id=%s",
+                                "Stopped graph memory updates: simulation_id=%s",
                                 simulation_id,
                             )
                         except Exception as error:
-                            logger.error(f"停止图谱记忆更新器失败: {error}")
+                            logger.error(f"Failed to stop graph memory updater: {error}")
                             desired_status = RunnerStatus.FAILED
-                            error_message = f"Zep图谱写入未完整完成: {error}"
+                            error_message = f"Zep graph writes did not finish completely: {error}"
 
                     state.runner_status = desired_status
                     state.error = error_message
@@ -744,9 +744,9 @@ class SimulationRunner:
                         error_message,
                     )
                     if desired_status == RunnerStatus.COMPLETED:
-                        logger.info(f"模拟完成: {simulation_id}")
+                        logger.info(f"Simulation completed: {simulation_id}")
                     else:
-                        logger.error(f"模拟失败: {simulation_id}, error={state.error}")
+                        logger.error(f"Simulation failed: {simulation_id}, error={state.error}")
                 cls._manual_stop_requests.discard(simulation_id)
             
             # 清理进程资源
@@ -812,11 +812,11 @@ class SimulationRunner:
                                     if platform == "twitter":
                                         state.twitter_completed = True
                                         state.twitter_running = False
-                                        logger.info(f"Twitter 模拟已完成: {state.simulation_id}, total_rounds={action_data.get('total_rounds')}, total_actions={action_data.get('total_actions')}")
+                                        logger.info(f"Twitter simulation finished: {state.simulation_id}, total_rounds={action_data.get('total_rounds')}, total_actions={action_data.get('total_actions')}")
                                     elif platform == "reddit":
                                         state.reddit_completed = True
                                         state.reddit_running = False
-                                        logger.info(f"Reddit 模拟已完成: {state.simulation_id}, total_rounds={action_data.get('total_rounds')}, total_actions={action_data.get('total_actions')}")
+                                        logger.info(f"Reddit simulation finished: {state.simulation_id}, total_rounds={action_data.get('total_rounds')}, total_actions={action_data.get('total_actions')}")
                                     
                                     # 检查是否所有启用的平台都已完成
                                     # 如果只运行了一个平台，只检查那个平台
@@ -828,7 +828,7 @@ class SimulationRunner:
                                         # terminal status after the process has
                                         # exited and Zep ingestion has drained.
                                         logger.info(
-                                            f"所有平台已结束，等待进程与图谱写入完成: "
+                                            f"All platforms have finished; waiting for the process and graph writes to complete: "
                                             f"{state.simulation_id}"
                                         )
                                         # Hivemind: the process now waits for
@@ -885,7 +885,7 @@ class SimulationRunner:
                             pass
                 return f.tell()
         except Exception as e:
-            logger.warning(f"读取动作日志失败: {log_path}, error={e}")
+            logger.warning(f"Failed to read action log: {log_path}, error={e}")
             return position
     
     @classmethod
@@ -949,7 +949,7 @@ class SimulationRunner:
         if IS_WINDOWS:
             # Windows: 使用 taskkill 命令终止进程树
             # /F = 强制终止, /T = 终止进程树（包括子进程）
-            logger.info(f"终止进程树 (Windows): simulation={simulation_id}, pid={process.pid}")
+            logger.info(f"Terminating process tree (Windows): simulation={simulation_id}, pid={process.pid}")
             try:
                 # 先尝试优雅终止
                 subprocess.run(
@@ -961,7 +961,7 @@ class SimulationRunner:
                     process.wait(timeout=timeout)
                 except subprocess.TimeoutExpired:
                     # 强制终止
-                    logger.warning(f"进程未响应，强制终止: {simulation_id}")
+                    logger.warning(f"Process not responding, forcing termination: {simulation_id}")
                     subprocess.run(
                         ['taskkill', '/F', '/PID', str(process.pid), '/T'],
                         capture_output=True,
@@ -969,7 +969,7 @@ class SimulationRunner:
                     )
                     process.wait(timeout=5)
             except Exception as e:
-                logger.warning(f"taskkill 失败，尝试 terminate: {e}")
+                logger.warning(f"taskkill failed, falling back to terminate: {e}")
                 process.terminate()
                 try:
                     process.wait(timeout=5)
@@ -979,7 +979,7 @@ class SimulationRunner:
             # Unix: 使用进程组终止
             # 由于使用了 start_new_session=True，进程组 ID 等于主进程 PID
             pgid = os.getpgid(process.pid)
-            logger.info(f"终止进程组 (Unix): simulation={simulation_id}, pgid={pgid}")
+            logger.info(f"Terminating process group (Unix): simulation={simulation_id}, pgid={pgid}")
             
             # 先发送 SIGTERM 给整个进程组
             os.killpg(pgid, signal.SIGTERM)
@@ -988,7 +988,7 @@ class SimulationRunner:
                 process.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
                 # 如果超时后还没结束，强制发送 SIGKILL
-                logger.warning(f"进程组未响应 SIGTERM，强制终止: {simulation_id}")
+                logger.warning(f"Process group ignored SIGTERM, forcing termination: {simulation_id}")
                 os.killpg(pgid, signal.SIGKILL)
                 process.wait(timeout=5)
     
@@ -998,7 +998,7 @@ class SimulationRunner:
         with cls._finalization_lock(simulation_id):
             state = cls.get_run_state(simulation_id)
             if not state:
-                raise ValueError(f"模拟不存在: {simulation_id}")
+                raise ValueError(f"Simulation not found: {simulation_id}")
             if state.runner_status == RunnerStatus.STOPPED:
                 return state
 
@@ -1020,7 +1020,7 @@ class SimulationRunner:
                 and not retrying_finalization
             ):
                 raise ValueError(
-                    f"模拟未在运行: {simulation_id}, status={state.runner_status}"
+                    f"Simulation is not running: {simulation_id}, status={state.runner_status}"
                 )
 
             state.runner_status = RunnerStatus.STOPPING
@@ -1036,7 +1036,7 @@ class SimulationRunner:
                 except ProcessLookupError:
                     pass
                 except Exception as e:
-                    logger.error(f"终止进程组失败: {simulation_id}, error={e}")
+                    logger.error(f"Failed to terminate process group: {simulation_id}, error={e}")
                     try:
                         process.terminate()
                         process.wait(timeout=5)
@@ -1067,7 +1067,7 @@ class SimulationRunner:
                 # leave the observable state as STOPPING and let polling expose
                 # the eventual STOPPED/FAILED result.
                 raise SimulationStopPending(
-                    f"模拟仍在停止中，图谱写入未在 {wait_timeout:.0f}s 内完成"
+                    f"Simulation is still stopping; graph writes did not finish within {wait_timeout:.0f}s"
                 )
         else:
             # Restart recovery or tests may have no monitor thread. Complete
@@ -1083,7 +1083,7 @@ class SimulationRunner:
                         state.twitter_running = False
                         state.reddit_running = False
                         state.completed_at = datetime.now().isoformat()
-                        state.error = f"Zep图谱写入未完整完成: {error}"
+                        state.error = f"Zep graph writes did not finish completely: {error}"
                         cls._save_run_state(state)
                         cls._sync_simulation_status(
                             simulation_id,
@@ -1105,13 +1105,13 @@ class SimulationRunner:
 
         state = cls.get_run_state(simulation_id) or state
         if state.runner_status == RunnerStatus.FAILED:
-            raise RuntimeError(state.error or "模拟停止失败")
+            raise RuntimeError(state.error or "Failed to stop the simulation")
         if state.runner_status != RunnerStatus.STOPPED:
             raise RuntimeError(
-                f"模拟停止未达到终态: {simulation_id}, status={state.runner_status}"
+                f"Simulation stop did not reach a final state: {simulation_id}, status={state.runner_status}"
             )
 
-        logger.info(f"模拟已停止: {simulation_id}")
+        logger.info(f"Simulation stopped: {simulation_id}")
         return state
 
     @classmethod
@@ -1420,7 +1420,7 @@ class SimulationRunner:
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         
         if not os.path.exists(sim_dir):
-            return {"success": True, "message": "模拟目录不存在，无需清理"}
+            return {"success": True, "message": "Simulation directory does not exist; nothing to clean up"}
         
         cleaned_files = []
         errors = []
@@ -1447,7 +1447,7 @@ class SimulationRunner:
                     os.remove(file_path)
                     cleaned_files.append(filename)
                 except Exception as e:
-                    errors.append(f"删除 {filename} 失败: {str(e)}")
+                    errors.append(f"Failed to delete {filename}: {str(e)}")
         
         # 清理平台目录中的动作日志
         for dir_name in dirs_to_clean:
@@ -1459,13 +1459,13 @@ class SimulationRunner:
                         os.remove(actions_file)
                         cleaned_files.append(f"{dir_name}/actions.jsonl")
                     except Exception as e:
-                        errors.append(f"删除 {dir_name}/actions.jsonl 失败: {str(e)}")
+                        errors.append(f"Failed to delete {dir_name}/actions.jsonl: {str(e)}")
         
         # 清理内存中的运行状态
         if simulation_id in cls._run_states:
             del cls._run_states[simulation_id]
         
-        logger.info(f"清理模拟日志完成: {simulation_id}, 删除文件: {cleaned_files}")
+        logger.info(f"Simulation logs cleaned up: {simulation_id}, deleted files: {cleaned_files}")
         
         return {
             "success": len(errors) == 0,
@@ -1497,7 +1497,7 @@ class SimulationRunner:
         if not simulation_ids:
             return
 
-        logger.info("正在安全完成所有模拟进程与图谱写入...")
+        logger.info("Safely finishing all simulation processes and graph writes...")
         cleanup_failed = False
 
         # Each simulation follows the normal stop/finalization path: terminate
@@ -1568,7 +1568,7 @@ class SimulationRunner:
             except Exception as error:
                 cleanup_failed = True
                 logger.error(
-                    "清理模拟失败，保留状态以便重试: simulation_id=%s, error=%s",
+                    "Simulation cleanup failed; keeping state so it can be retried: simulation_id=%s, error=%s",
                     simulation_id,
                     error,
                 )
@@ -1577,9 +1577,9 @@ class SimulationRunner:
             # Retained updaters and FAILED run states continue to block report
             # generation and graph deletion. Permit an explicit retry.
             cls._cleanup_done = False
-            logger.error("部分模拟未安全完成清理")
+            logger.error("Some simulations were not cleaned up safely")
         else:
-            logger.info("模拟进程与图谱写入清理完成")
+            logger.info("Simulation processes and graph writes cleaned up")
     
     @classmethod
     def register_cleanup(cls):
@@ -1617,7 +1617,7 @@ class SimulationRunner:
             """信号处理器：先清理模拟进程，再调用原处理器"""
             # 只有在有进程需要清理时才打印日志
             if cls._processes or cls._graph_memory_enabled:
-                logger.info(f"收到信号 {signum}，开始清理...")
+                logger.info(f"Received signal {signum}, cleaning up...")
             cls.cleanup_all_simulations()
             
             # 调用原有的信号处理器，让 Flask 正常退出
@@ -1650,7 +1650,7 @@ class SimulationRunner:
                 signal.signal(signal.SIGHUP, cleanup_handler)
         except ValueError:
             # 不在主线程中，只能使用 atexit
-            logger.warning("无法注册信号处理器（不在主线程），仅使用 atexit")
+            logger.warning("Cannot register signal handlers (not on the main thread); using atexit only")
         
         _cleanup_registered = True
     
@@ -1752,14 +1752,14 @@ class SimulationRunner:
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         if not os.path.exists(sim_dir):
-            raise ValueError(f"模拟不存在: {simulation_id}")
+            raise ValueError(f"Simulation not found: {simulation_id}")
 
         ipc_client = SimulationIPCClient(sim_dir)
 
         if not ipc_client.check_env_alive():
-            raise ValueError(f"模拟环境未运行或已关闭，无法执行Interview: {simulation_id}")
+            raise ValueError(f"Simulation environment is not running or has been closed, so the interview cannot run: {simulation_id}")
 
-        logger.info(f"发送Interview命令: simulation_id={simulation_id}, agent_id={agent_id}, platform={platform}")
+        logger.info(f"Sending interview command: simulation_id={simulation_id}, agent_id={agent_id}, platform={platform}")
 
         response = ipc_client.send_interview(
             agent_id=agent_id,
@@ -1814,14 +1814,14 @@ class SimulationRunner:
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         if not os.path.exists(sim_dir):
-            raise ValueError(f"模拟不存在: {simulation_id}")
+            raise ValueError(f"Simulation not found: {simulation_id}")
 
         ipc_client = SimulationIPCClient(sim_dir)
 
         if not ipc_client.check_env_alive():
-            raise ValueError(f"模拟环境未运行或已关闭，无法执行Interview: {simulation_id}")
+            raise ValueError(f"Simulation environment is not running or has been closed, so the interview cannot run: {simulation_id}")
 
-        logger.info(f"发送批量Interview命令: simulation_id={simulation_id}, count={len(interviews)}, platform={platform}")
+        logger.info(f"Sending batch interview command: simulation_id={simulation_id}, count={len(interviews)}, platform={platform}")
 
         response = ipc_client.send_batch_interview(
             interviews=interviews,
@@ -1871,19 +1871,19 @@ class SimulationRunner:
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         if not os.path.exists(sim_dir):
-            raise ValueError(f"模拟不存在: {simulation_id}")
+            raise ValueError(f"Simulation not found: {simulation_id}")
 
         # 从配置文件获取所有Agent信息
         config_path = os.path.join(sim_dir, "simulation_config.json")
         if not os.path.exists(config_path):
-            raise ValueError(f"模拟配置不存在: {simulation_id}")
+            raise ValueError(f"Simulation config not found: {simulation_id}")
 
         with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
 
         agent_configs = config.get("agent_configs", [])
         if not agent_configs:
-            raise ValueError(f"模拟配置中没有Agent: {simulation_id}")
+            raise ValueError(f"Simulation config has no agents: {simulation_id}")
 
         # 构建批量采访列表
         interviews = []
@@ -1895,7 +1895,7 @@ class SimulationRunner:
                     "prompt": prompt
                 })
 
-        logger.info(f"发送全局Interview命令: simulation_id={simulation_id}, agent_count={len(interviews)}, platform={platform}")
+        logger.info(f"Sending interview command to all agents: simulation_id={simulation_id}, agent_count={len(interviews)}, platform={platform}")
 
         return cls.interview_agents_batch(
             simulation_id=simulation_id,
@@ -1924,24 +1924,24 @@ class SimulationRunner:
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         if not os.path.exists(sim_dir):
-            raise ValueError(f"模拟不存在: {simulation_id}")
+            raise ValueError(f"Simulation not found: {simulation_id}")
         
         ipc_client = SimulationIPCClient(sim_dir)
         
         if not ipc_client.check_env_alive():
             return {
                 "success": True,
-                "message": "环境已经关闭"
+                "message": "The environment is already closed"
             }
         
-        logger.info(f"发送关闭环境命令: simulation_id={simulation_id}")
+        logger.info(f"Sending close-environment command: simulation_id={simulation_id}")
         
         try:
             response = ipc_client.send_close_env(timeout=timeout)
             
             return {
                 "success": response.status.value == "completed",
-                "message": "环境关闭命令已发送",
+                "message": "Close-environment command sent",
                 "result": response.result,
                 "timestamp": response.timestamp
             }
@@ -1949,7 +1949,7 @@ class SimulationRunner:
             # 超时可能是因为环境正在关闭
             return {
                 "success": True,
-                "message": "环境关闭命令已发送（等待响应超时，环境可能正在关闭）"
+                "message": "Close-environment command sent (timed out waiting for a response; the environment may be shutting down)"
             }
     
     @classmethod
@@ -2006,7 +2006,7 @@ class SimulationRunner:
             conn.close()
             
         except Exception as e:
-            logger.error(f"读取Interview历史失败 ({platform_name}): {e}")
+            logger.error(f"Failed to read interview history ({platform_name}): {e}")
         
         return results
 
