@@ -1,6 +1,6 @@
 """
-文件解析工具
-支持PDF、Markdown、TXT文件的文本提取
+File parsing utilities
+Extracts text from PDF, Markdown and TXT files
 """
 
 import os
@@ -10,29 +10,29 @@ from typing import List, Optional
 
 def _read_text_with_fallback(file_path: str) -> str:
     """
-    读取文本文件，UTF-8失败时自动探测编码。
+    Read a text file, detecting the encoding automatically if UTF-8 fails.
     
-    采用多级回退策略：
-    1. 首先尝试 UTF-8 解码
-    2. 使用 charset_normalizer 检测编码
-    3. 回退到 chardet 检测编码
-    4. 最终使用 UTF-8 + errors='replace' 兜底
+    Falls back in stages:
+    1. Try UTF-8 first
+    2. Detect the encoding with charset_normalizer
+    3. Fall back to chardet
+    4. As a last resort, decode as UTF-8 with errors='replace'
     
     Args:
-        file_path: 文件路径
+        file_path: Path to the file
         
     Returns:
-        解码后的文本内容
+        The decoded text
     """
     data = Path(file_path).read_bytes()
     
-    # 首先尝试 UTF-8
+    # Try UTF-8 first
     try:
         return data.decode('utf-8')
     except UnicodeDecodeError:
         pass
     
-    # 尝试使用 charset_normalizer 检测编码
+    # Detect the encoding with charset_normalizer
     encoding = None
     try:
         from charset_normalizer import from_bytes
@@ -42,7 +42,7 @@ def _read_text_with_fallback(file_path: str) -> str:
     except Exception:
         pass
     
-    # 回退到 chardet
+    # Fall back to chardet
     if not encoding:
         try:
             import chardet
@@ -51,7 +51,7 @@ def _read_text_with_fallback(file_path: str) -> str:
         except Exception:
             pass
     
-    # 最终兜底：使用 UTF-8 + replace
+    # Last resort: UTF-8 with errors='replace'
     if not encoding:
         encoding = 'utf-8'
     
@@ -59,20 +59,20 @@ def _read_text_with_fallback(file_path: str) -> str:
 
 
 class FileParser:
-    """文件解析器"""
+    """Extracts text from uploaded files."""
     
     SUPPORTED_EXTENSIONS = {'.pdf', '.md', '.markdown', '.txt'}
     
     @classmethod
     def is_supported(cls, file_path: str) -> bool:
         """
-        检查文件是否为支持的格式
+        Check whether the file is in a supported format
         
         Args:
-            file_path: 文件路径
+            file_path: Path to the file
             
         Returns:
-            如果文件格式受支持则返回 True
+            True if the file format is supported
         """
         suffix = Path(file_path).suffix.lower()
         return suffix in cls.SUPPORTED_EXTENSIONS
@@ -80,13 +80,13 @@ class FileParser:
     @classmethod
     def extract_text(cls, file_path: str) -> str:
         """
-        从文件中提取文本
+        Extract text from a file
         
         Args:
-            file_path: 文件路径
+            file_path: Path to the file
             
         Returns:
-            提取的文本内容
+            The extracted text
         """
         path = Path(file_path)
         
@@ -109,7 +109,7 @@ class FileParser:
     
     @staticmethod
     def _extract_from_pdf(file_path: str) -> str:
-        """从PDF提取文本"""
+        """Extract text from a PDF."""
         try:
             import fitz  # PyMuPDF
         except ImportError:
@@ -126,24 +126,24 @@ class FileParser:
     
     @staticmethod
     def _extract_from_md(file_path: str) -> str:
-        """从Markdown提取文本，支持自动编码检测"""
+        """Extract text from a Markdown file, detecting the encoding automatically."""
         return _read_text_with_fallback(file_path)
     
     @staticmethod
     def _extract_from_txt(file_path: str) -> str:
-        """从TXT提取文本，支持自动编码检测"""
+        """Extract text from a TXT file, detecting the encoding automatically."""
         return _read_text_with_fallback(file_path)
     
     @classmethod
     def extract_from_multiple(cls, file_paths: List[str]) -> str:
         """
-        从多个文件提取文本并合并
+        Extract text from several files and join it
         
         Args:
-            file_paths: 文件路径列表
+            file_paths: List of file paths
             
         Returns:
-            合并后的文本
+            The combined text
         """
         all_texts = []
         
@@ -164,15 +164,15 @@ def split_text_into_chunks(
     overlap: int = 50
 ) -> List[str]:
     """
-    将文本分割成小块
+    Split text into chunks
     
     Args:
-        text: 原始文本
-        chunk_size: 每块的字符数
-        overlap: 重叠字符数
+        text: The source text
+        chunk_size: Characters per chunk
+        overlap: Characters shared by consecutive chunks
         
     Returns:
-        文本块列表
+        List of text chunks
     """
     if len(text) <= chunk_size:
         return [text] if text.strip() else []
@@ -183,9 +183,10 @@ def split_text_into_chunks(
     while start < len(text):
         end = start + chunk_size
         
-        # 尝试在句子边界处分割
+        # Try to split on a sentence boundary
         if end < len(text):
-            # 查找最近的句子结束符
+            # Find the last sentence terminator in the window. The first three are the
+            # full-width stops used in Chinese and Japanese text, so CJK documents split cleanly too.
             for sep in ['。', '！', '？', '.\n', '!\n', '?\n', '\n\n', '. ', '! ', '? ']:
                 last_sep = text[start:end].rfind(sep)
                 if last_sep != -1 and last_sep > chunk_size * 0.3:
@@ -196,7 +197,7 @@ def split_text_into_chunks(
         if chunk:
             chunks.append(chunk)
         
-        # 下一个块从重叠位置开始
+        # The next chunk starts inside the overlap
         start = end - overlap if end < len(text) else len(text)
     
     return chunks

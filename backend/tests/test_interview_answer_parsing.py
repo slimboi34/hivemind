@@ -101,7 +101,7 @@ def test_agent_interview_text_skips_quotes_with_answer_labels():
         response="Answer",
         key_quotes=[
             "This quote still mentions Question 2 and is noise",
-            "问题2的内容混在这里了，应该被过滤掉",
+            "问题2的内容混在这里了，应该被过滤掉",  # the same noise behind the older Chinese "Question 2" label
             "A clean and meaningful quote from Alice",
         ],
     )

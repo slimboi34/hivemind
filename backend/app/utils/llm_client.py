@@ -1,6 +1,6 @@
 """
-LLM客户端封装
-统一使用OpenAI格式调用
+LLM client wrapper
+Every model is called through the OpenAI-compatible API
 """
 
 import json
@@ -89,7 +89,7 @@ def _contains_additional_json_container(content: str) -> bool:
 
 
 class LLMClient:
-    """LLM客户端"""
+    """LLM client."""
     
     def __init__(
         self,
@@ -136,16 +136,16 @@ class LLMClient:
         response_format: Optional[Dict] = None
     ) -> str:
         """
-        发送聊天请求
+        Send a chat request
         
         Args:
-            messages: 消息列表
-            temperature: 温度参数
-            max_tokens: 最大token数
-            response_format: 响应格式（如JSON模式）
+            messages: List of messages
+            temperature: Sampling temperature
+            max_tokens: Maximum number of tokens
+            response_format: Response format (e.g. JSON mode)
             
         Returns:
-            模型响应文本
+            The model's reply text
         """
         response = self._create_completion(
             messages=messages,
@@ -164,16 +164,16 @@ class LLMClient:
         max_attempts: int = 1,
     ) -> Dict[str, Any]:
         """
-        发送聊天请求并返回JSON
+        Send a chat request and return the parsed JSON
         
         Args:
-            messages: 消息列表
-            temperature: 温度参数
-            max_tokens: 最大token数
-            max_attempts: 内容生成尝试次数（不含一次明确的JSON模式能力降级）
+            messages: List of messages
+            temperature: Sampling temperature
+            max_tokens: Maximum number of tokens
+            max_attempts: Number of content-generation attempts (not counting one fallback when the provider explicitly rejects JSON mode)
             
         Returns:
-            解析后的JSON对象
+            The parsed JSON object
         """
         if max_attempts < 1:
             raise ValueError("max_attempts must be at least 1")

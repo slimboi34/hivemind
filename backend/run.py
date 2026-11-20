@@ -1,21 +1,21 @@
 """
-Hivemind Backend 启动入口
+Hivemind Backend entry point
 """
 
 import os
 import sys
 
-# 解决 Windows 控制台中文乱码问题：在所有导入之前设置 UTF-8 编码
+# Avoid garbled non-ASCII output in the Windows console: switch to UTF-8 before any other import
 if sys.platform == 'win32':
-    # 设置环境变量确保 Python 使用 UTF-8
+    # Make Python use UTF-8 for its standard streams
     os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
-    # 重新配置标准输出流为 UTF-8
+    # Reconfigure stdout/stderr as UTF-8
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     if hasattr(sys.stderr, 'reconfigure'):
         sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
-# 添加项目根目录到路径
+# Put the backend directory (this file's folder) on the import path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app import create_app
@@ -23,8 +23,8 @@ from app.config import Config
 
 
 def main():
-    """主函数"""
-    # 验证配置
+    """Entry point."""
+    # Validate the configuration
     errors = Config.validate()
     if errors:
         print("Configuration error:")
@@ -33,15 +33,15 @@ def main():
         print("\nCheck the settings in your .env file")
         sys.exit(1)
     
-    # 创建应用
+    # Create the app
     app = create_app()
     
-    # 获取运行配置
+    # Read the run settings
     host = os.environ.get('FLASK_HOST', '0.0.0.0')
     port = int(os.environ.get('FLASK_PORT') or os.environ.get('PORT') or 5001)
     debug = Config.DEBUG
     
-    # 启动服务
+    # Start the server
     app.run(host=host, port=port, debug=debug, threaded=True)
 
 
