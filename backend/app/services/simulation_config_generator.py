@@ -27,8 +27,9 @@ from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger('hivemind.simulation_config')
 
-# Daily activity schedule for China (Beijing time)
-CHINA_TIMEZONE_CONFIG = {
+# A typical daily activity curve, in the local time of the people the event is about. The
+# simulated clock is local to the scenario, so the same curve works for any country.
+DAILY_ROUTINE_CONFIG = {
     # Late night (almost no one active)
     "dead_hours": [0, 1, 2, 3, 4, 5],
     # Morning (gradually waking up)
@@ -94,7 +95,7 @@ class AgentActivityConfig:
 
 @dataclass  
 class TimeSimulationConfig:
-    """Time simulation config (based on Chinese daily routines)"""
+    """Time simulation config (a typical local daily routine)"""
     # Total simulated duration (simulated hours)
     total_simulation_hours: int = 72  # simulate 72 hours (3 days) by default
     
@@ -105,7 +106,7 @@ class TimeSimulationConfig:
     agents_per_hour_min: int = 5
     agents_per_hour_max: int = 20
     
-    # Peak hours (19-22 in the evening, when Chinese users are most active)
+    # Peak hours (19-22 in the evening, when most people are online)
     peak_hours: List[int] = field(default_factory=lambda: [19, 20, 21, 22])
     peak_activity_multiplier: float = 1.5
     
@@ -563,7 +564,7 @@ class SimulationConfigGenerator:
 Generate the time config JSON.
 
 ### Basic principles (for reference only; adapt them to the specific event and the groups taking part):
-- Infer the time zone and daily routine of the target user groups from the simulated scenario; the reference example below is for UTC+8
+- Hours are local time for the people the scenario is about (the simulated clock is local to the scenario); adapt the routine to them
 - 0-5am: almost no activity (activity multiplier 0.05)
 - 6-8am: gradually becoming active (activity multiplier 0.4)
 - Working hours 9am-6pm: moderately active (activity multiplier 0.7)
@@ -610,7 +611,7 @@ Field descriptions:
             return self._get_default_time_config(num_entities)
     
     def _get_default_time_config(self, num_entities: int) -> Dict[str, Any]:
-        """Get the default time config (Chinese daily routine)"""
+        """Get the default time config (a typical local daily routine)"""
         return {
             "total_simulation_hours": 72,
             "minutes_per_round": 60,  # 1 hour per round, to speed up simulated time
@@ -620,7 +621,7 @@ Field descriptions:
             "off_peak_hours": [0, 1, 2, 3, 4, 5],
             "morning_hours": [6, 7, 8],
             "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-            "reasoning": "Using the default Chinese daily-routine config (1 hour per round)"
+            "reasoning": "Using the default daily-routine config (1 hour per round)"
         }
     
     def _parse_time_config(self, result: Dict[str, Any], num_entities: int) -> TimeSimulationConfig:
@@ -882,7 +883,7 @@ Simulation requirement: {simulation_requirement}
 
 ## Task
 Generate an activity config for each entity. Note:
-- **Timing follows the target user groups' daily routine**: the values below are a reference (UTC+8); adjust them to the simulated scenario
+- **Timing follows the target user groups' local daily routine**: the values below are a reference in local time; adjust them to the simulated scenario
 - **Official institutions** (University/GovernmentAgency): low activity (0.1-0.3), active during working hours (9-17), slow to respond (60-240 minutes), high influence (2.5-3.0)
 - **Media** (MediaOutlet): medium activity (0.4-0.6), active all day (8-23), quick to respond (5-30 minutes), high influence (2.0-2.5)
 - **Individuals** (Student/Person/Alumni): high activity (0.6-0.9), active mainly in the evening (18-23), quick to respond (1-15 minutes), low influence (0.8-1.2)
@@ -896,7 +897,7 @@ Return JSON (no markdown):
             "activity_level": <0.0-1.0>,
             "posts_per_hour": <posting frequency>,
             "comments_per_hour": <commenting frequency>,
-            "active_hours": [<list of active hours, taking Chinese daily routines into account>],
+            "active_hours": [<list of active hours, in local time, following these groups' daily routine>],
             "response_delay_min": <minimum response delay in minutes>,
             "response_delay_max": <maximum response delay in minutes>,
             "sentiment_bias": <-1.0 to 1.0>,
@@ -947,7 +948,7 @@ Return JSON (no markdown):
         return configs
     
     def _generate_agent_config_by_rule(self, entity: EntityNode) -> Dict[str, Any]:
-        """Generate a single agent config from rules (Chinese daily routine)"""
+        """Generate a single agent config from rules (a typical local daily routine)"""
         entity_type = (entity.get_entity_type() or "Unknown").lower()
         
         if entity_type in ["university", "governmentagency", "ngo"]:
