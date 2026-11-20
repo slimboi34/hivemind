@@ -82,7 +82,10 @@
     "pastePlaceholder": "粘贴文章、备忘录、新闻稿或你自己的笔记。",
     "noEvidenceTitle": "没有资料？直接运行。",
     "noEvidenceNote": "Hivemind 会根据 AI 模型已有的知识撰写一份背景简报。这些信息可能已过时，如涉及近期或内部信息，请添加资料。",
-    "evidenceReady": "Hivemind 将基于你的资料构建推演。"
+    "evidenceReady": "Hivemind 将基于你的资料构建推演。",
+    "publicVisitorUsed": "你今天在本站的免费运行次数已用完（每位访客一次，同一网络视为同一访客）。可以浏览下方的历史运行，或明天再来。",
+    "publicDayUsed": "本站今天的 {n} 次免费运行已用完。可以浏览下方的历史运行，或明天再来。",
+    "publicBusy": "另一个模拟正在运行。本站一次只运行一个模拟，结束后（通常 15 分钟内）即可运行。"
   },
   "main": {
     "layoutGraph": "图谱",
@@ -94,7 +97,8 @@
       "模拟",
       "报告",
       "深度互动"
-    ]
+    ],
+    "backHome": "返回首页"
   },
   "step1": {
     "ontologyGeneration": "设计本体",
@@ -198,7 +202,7 @@
   "step3": {
     "startGenerateReport": "开始生成结果报告",
     "generatingReport": "启动中...",
-    "waitingForActions": "等待智能体的首批行动…",
+    "waitingForActions": "等待智能体行动…",
     "errorMissingSimId": "错误：缺少 simulationId",
     "startingDualSim": "正在启动双平台并行模拟...",
     "graphMemoryUpdateEnabled": "已开启动态图谱更新模式",
@@ -224,7 +228,8 @@
     "forceStopSuccess": "模拟已强制停止",
     "forceStopFailed": "强制停止失败: {error}",
     "startGenerateReportBtn": "开始生成结果报告",
-    "generatingReportBtn": "启动中..."
+    "generatingReportBtn": "启动中...",
+    "tryAgain": "重试"
   },
   "step4": {
     "generatingSection": "正在生成{title}...",

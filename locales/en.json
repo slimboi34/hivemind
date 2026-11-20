@@ -85,7 +85,10 @@
     "noEvidenceNote": "Hivemind will write a background brief from what its AI model already knows about the topic. That can be out of date, so add documents for anything recent or private.",
     "evidenceReady": "Hivemind will build the run from your evidence.",
     "publicRunsLeft": "{left} of {total} free runs left today.",
-    "publicNote": "Runs on this site are public and appear in the history below, so do not paste anything private. Each run is capped at {rounds} rounds."
+    "publicNote": "Runs on this site are public and appear in the history below, so do not paste anything private. Each run is capped at {rounds} rounds.",
+    "publicVisitorUsed": "You've used today's free run on this site (one per visitor, and everyone on the same network counts as one visitor). Browse the earlier runs below, or come back tomorrow.",
+    "publicDayUsed": "Today's {n} free runs on this site are used up. Browse the earlier runs below, or come back tomorrow.",
+    "publicBusy": "Another simulation is running right now. This site runs one at a time, so Run opens again when it finishes (usually within 15 minutes)."
   },
   "main": {
     "layoutGraph": "Graph",
@@ -97,7 +100,8 @@
       "Simulation",
       "Report",
       "Interaction"
-    ]
+    ],
+    "backHome": "Back to the home page"
   },
   "step1": {
     "ontologyGeneration": "Design the ontology",
@@ -204,7 +208,7 @@
   "step3": {
     "startGenerateReport": "Generate Report",
     "generatingReport": "Starting...",
-    "waitingForActions": "Waiting for the first agent actions…",
+    "waitingForActions": "Waiting for agent actions…",
     "errorMissingSimId": "Error: missing simulationId",
     "startingDualSim": "Starting dual-platform parallel simulation...",
     "graphMemoryUpdateEnabled": "Dynamic graph memory update enabled",
@@ -230,7 +234,8 @@
     "forceStopSuccess": "Simulation force stopped",
     "forceStopFailed": "Force stop failed: {error}",
     "startGenerateReportBtn": "Generate Report",
-    "generatingReportBtn": "Starting..."
+    "generatingReportBtn": "Starting...",
+    "tryAgain": "Try again"
   },
   "step4": {
     "generatingSection": "Generating {title}...",

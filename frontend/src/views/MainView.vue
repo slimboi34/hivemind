@@ -24,6 +24,12 @@
       </span>
     </AppHeader>
 
+    <!-- Why a run stopped (e.g. a public-site limit), in words rather than a red pill -->
+    <div v-if="error" class="run-error" role="alert">
+      <span>{{ error }}</span>
+      <router-link to="/" class="run-error__link">{{ $t('main.backHome') }}</router-link>
+    </div>
+
     <!-- Main Content Area -->
     <main class="content-area">
       <!-- Left Panel: Graph -->
@@ -417,6 +423,25 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.run-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hm-space-4, 16px);
+  padding: var(--hm-space-3, 12px) var(--hm-space-5, 24px);
+  background: var(--hm-danger-soft);
+  color: var(--hm-danger);
+  border-bottom: 1px solid var(--hm-line);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.run-error__link {
+  flex: 0 0 auto;
+  color: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+}
+
 .main-view {
   height: 100vh;
   display: flex;

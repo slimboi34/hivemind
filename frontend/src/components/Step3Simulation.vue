@@ -269,9 +269,13 @@
           </div>
         </TransitionGroup>
 
-        <div v-if="allActions.length === 0" class="waiting-state">
+        <div v-if="allActions.length === 0 && startError" class="waiting-state start-error" role="alert">
+          <span>{{ startError }}</span>
+          <button class="action-btn secondary" :disabled="isStarting" @click="doStartSimulation">{{ $t('step3.tryAgain') }}</button>
+        </div>
+        <div v-else-if="allActions.length === 0" class="waiting-state">
           <div class="pulse-ring"></div>
-          <span>Waiting for agent actions...</span>
+          <span>{{ $t('step3.waitingForActions') }}</span>
         </div>
       </div>
     </div>
@@ -439,7 +443,7 @@ const doStartSimulation = async () => {
       startStatusPolling()
       startDetailPolling()
     } else {
-      startError.value = res.error || '启动失败'
+      startError.value = res.error || t('common.unknownError')
       addLog(t('log.startFailed', { error: res.error || t('common.unknownError') }))
       emit('update-status', 'error')
     }
@@ -744,6 +748,14 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.start-error {
+  gap: var(--hm-space-3, 12px);
+  max-width: 460px;
+  margin: 0 auto;
+  text-align: center;
+  color: var(--hm-danger);
+}
+
 .simulation-panel {
   height: 100%;
   display: flex;

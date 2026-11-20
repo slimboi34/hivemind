@@ -212,6 +212,7 @@
 
             <!-- 启动按钮 -->
             <div class="console-section btn-section">
+              <p v-if="publicBlock" class="public-note public-note--blocked" role="status">{{ publicBlock }}</p>
               <p v-if="isPublic && publicStatus" class="public-note" role="note">
                 <strong>{{ $t('home.publicRunsLeft', { left: publicStatus.runs_left_today, total: publicStatus.runs_per_day }) }}</strong>
                 {{ $t('home.publicNote', { rounds: publicStatus.max_rounds }) }}
@@ -219,7 +220,7 @@
               <button 
                 class="start-engine-btn"
                 @click="startSimulation"
-                :disabled="!canSubmit || loading"
+                :disabled="!canSubmit || loading || !!publicBlock"
               >
                 <span v-if="!loading">{{ $t('home.startEngine') }}</span>
                 <span v-else>{{ $t('home.initializing') }}</span>
@@ -237,8 +238,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
 import AppHeader from '../components/AppHeader.vue'
 import HivemindMark from '../components/HivemindMark.vue'
@@ -247,15 +249,31 @@ import service from '../api/index.js'
 
 // Public site: the shared daily quota, shown under the Run button.
 const isPublic = import.meta.env.VITE_PUBLIC === '1'
+const { t } = useI18n()
 const publicStatus = ref(null)
-onMounted(async () => {
-  if (!isPublic) return
+const loadPublicStatus = async () => {
   try {
     const res = await service.get('/api/public/status')
     publicStatus.value = res.data
   } catch {
     publicStatus.value = null
   }
+}
+let publicTimer = null
+onMounted(() => {
+  if (!isPublic) return
+  loadPublicStatus()
+  publicTimer = setInterval(loadPublicStatus, 30000)  // so "busy" clears without a reload
+})
+onUnmounted(() => clearInterval(publicTimer))
+// Why Run is unavailable right now, in the order the server checks it
+const publicBlock = computed(() => {
+  const st = publicStatus.value
+  if (!isPublic || !st) return ''
+  if (st.visitor_runs_left_today === 0) return t('home.publicVisitorUsed')
+  if (st.runs_left_today === 0) return t('home.publicDayUsed', { n: st.runs_per_day })
+  if (st.busy) return t('home.publicBusy')
+  return ''
 })
 
 const router = useRouter()
@@ -898,6 +916,12 @@ const startSimulation = () => {
   font-size: 13px;
   line-height: 1.5;
   color: var(--hm-ink-3, #555048);
+}
+.public-note--blocked {
+  padding: var(--hm-space-3, 12px);
+  border-radius: var(--hm-radius-md, 8px);
+  background: var(--hm-signal-soft);
+  color: var(--hm-signal-ink);
 }
 .public-note strong {
   color: var(--hm-ink, #16140F);
