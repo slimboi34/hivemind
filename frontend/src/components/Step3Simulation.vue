@@ -682,7 +682,8 @@ const handleNextStep = async () => {
   try {
     const res = await generateReport({
       simulation_id: props.simulationId,
-      force_regenerate: true
+      // The public site makes one report per run; asking again returns that report.
+      force_regenerate: import.meta.env.VITE_PUBLIC !== '1'
     })
     
     if (res.success && res.data) {

@@ -77,7 +77,7 @@ def _load() -> dict:
     except (OSError, ValueError):
         data = {}
     data.setdefault('days', {})
-    data.setdefault('projects', {})      # project_id -> {ip, created, built, simulations: []}
+    data.setdefault('projects', {})      # project_id -> {visitor, created, built, simulations: []}
     data.setdefault('simulations', {})   # simulation_id -> {project_id, started, reported}
     return data
 
@@ -115,6 +115,11 @@ def client_ip() -> str:
     return parts[0] if parts else (request.remote_addr or 'unknown')
 
 
+def _visitor(ip: str) -> str:
+    """What the quota file stores for a visitor: a hash of the address, never the address."""
+    return hashlib.sha256(('hivemind-visitor:' + ip).encode()).hexdigest()[:16]
+
+
 def _simulation_running() -> bool:
     from .services.simulation_runner import SimulationRunner, RunnerStatus
     active = (RunnerStatus.STARTING, RunnerStatus.RUNNING, RunnerStatus.STOPPING)
@@ -122,9 +127,23 @@ def _simulation_running() -> bool:
         if proc.poll() is not None:
             continue
         state = SimulationRunner._run_states.get(sim_id)
-        if state is None or state.runner_status in active:
+        if state is None:
             return True
+        if state.runner_status in active:
+            rounds_done = bool(getattr(state, 'ready_for_report', False)) or \
+                SimulationRunner._check_all_platforms_completed(state)
+            if not rounds_done:
+                return True
     return False
+
+
+def _has_report(simulation_id: str) -> bool:
+    from .services.report_agent import ReportManager, ReportStatus
+    try:
+        rep = ReportManager.get_report_by_simulation(simulation_id)
+    except Exception:
+        return False
+    return bool(rep) and rep.status == ReportStatus.COMPLETED
 
 
 def _sim_project(simulation_id: str) -> str:
@@ -140,7 +159,7 @@ def status() -> dict:
     with _lock:
         data = _load()
         day = _day(data)
-        ip = client_ip()
+        ip = _visitor(client_ip())
         return {
             'public': True,
             'runs_today': day['runs'],
@@ -150,7 +169,7 @@ def status() -> dict:
             'busy': _simulation_running(),
             'max_rounds': Config.OASIS_DEFAULT_MAX_ROUNDS,
             # Non-reversible tag for checking that visitors are told apart correctly
-            'visitor': hashlib.sha256(ip.encode()).hexdigest()[:8],
+            'visitor': ip[:8],
         }
 
 
@@ -211,7 +230,7 @@ def _check() -> object:
     with _lock:
         data = _load()
         day = _day(data)
-        ip = client_ip()
+        ip = _visitor(client_ip())
 
         if path == '/api/graph/ontology/generate':
             if _simulation_running():
@@ -293,6 +312,8 @@ def _check() -> object:
 
         if path == '/api/report/generate':
             sid = body.get('simulation_id', '')
+            if _has_report(sid):
+                return None  # not forced (refused above), so the endpoint returns that report
             rec = data['simulations'].setdefault(sid, {'project_id': _sim_project(sid), 'history': True})
             if rec.get('reported'):
                 return _deny('This simulation already has its report.')
@@ -319,8 +340,20 @@ def _check() -> object:
     return None
 
 
+def _strip_traceback(response):
+    """Error responses carry a 'traceback' field for local debugging; visitors don't need
+    file paths and line numbers, so it is dropped here (the server log keeps it)."""
+    if response.status_code >= 400 and response.is_json:
+        body = response.get_json(silent=True)
+        if isinstance(body, dict) and 'traceback' in body:
+            body.pop('traceback', None)
+            response.set_data(json.dumps(body, ensure_ascii=False))
+    return response
+
+
 def _record(response):
     """Remember which projects and simulations were started on this site."""
+    _strip_traceback(response)
     try:
         if response.status_code != 200 or request.method != 'POST':
             return response
@@ -329,7 +362,7 @@ def _record(response):
             if pid:
                 with _lock:
                     data = _load()
-                    data['projects'][pid] = {'ip': client_ip(), 'created': _today(), 'simulations': []}
+                    data['projects'][pid] = {'visitor': _visitor(client_ip()), 'created': _today(), 'simulations': []}
                     _save(data)
         elif request.path == '/api/simulation/create' and request.environ.get('hivemind.public_project'):
             pid = request.environ['hivemind.public_project']

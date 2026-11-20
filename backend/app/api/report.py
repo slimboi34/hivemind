@@ -202,9 +202,20 @@ def generate_report():
                     "success": False,
                     "error": "The project graph changed while reporting was starting",
                 }), 409
+            # Same exception as above: every round is played and the process is only
+            # kept alive for interviews, so the action data is final.
+            refreshed_rounds_finished = bool(
+                refreshed_run_state is not None
+                and refreshed_run_state.runner_status == RunnerStatus.RUNNING
+                and (
+                    getattr(refreshed_run_state, "ready_for_report", False)
+                    or SimulationRunner._check_all_platforms_completed(refreshed_run_state)
+                )
+            )
             if refreshed_updater is not None or (
                 refreshed_run_state is not None
                 and refreshed_run_state.runner_status in active_statuses
+                and not refreshed_rounds_finished
             ):
                 return jsonify({
                     "success": False,
@@ -216,8 +227,11 @@ def generate_report():
                 }), 409
             if (
                 refreshed_run_state is None
-                or refreshed_run_state.runner_status
-                not in successful_terminal_statuses
+                or (
+                    refreshed_run_state.runner_status
+                    not in successful_terminal_statuses
+                    and not refreshed_rounds_finished
+                )
             ):
                 return jsonify({
                     "success": False,

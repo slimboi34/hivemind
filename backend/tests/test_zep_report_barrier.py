@@ -349,3 +349,48 @@ def test_report_allowed_once_rounds_finish_with_env_alive(
         _payload, status = _json_result(report_api.generate_report())
 
     assert status == expected_status
+
+
+def test_report_starts_while_agents_are_kept_alive_after_the_last_round(monkeypatch):
+    """Both run-state checks (before and under the graph lock) must accept a run whose
+    rounds are all played but whose process is kept up for interviews."""
+    simulation = SimpleNamespace(simulation_id="sim-1", project_id="proj-1", graph_id="graph-1",
+                                 status=SimulationStatus.READY)
+    project = SimpleNamespace(project_id="proj-1", graph_id="graph-1",
+                              status=ProjectStatus.GRAPH_COMPLETED, simulation_requirement="mock")
+    run_state = SimpleNamespace(simulation_id="sim-1", runner_status=RunnerStatus.RUNNING,
+                                ready_for_report=True)
+    started = []
+
+    class Tasks:
+        def create_task(self, **_kwargs):
+            return "task-1"
+
+    class ParkedThread:
+        def __init__(self, *, target, daemon):
+            self.target = target
+
+        def start(self):
+            started.append(self.target)
+
+    monkeypatch.setattr(report_api, "SimulationManager",
+                        lambda: SimpleNamespace(get_simulation=lambda _sid: simulation))
+    monkeypatch.setattr(report_api.ProjectManager, "get_project", classmethod(lambda _cls, _pid: project))
+    monkeypatch.setattr(report_api.SimulationRunner, "get_run_state", classmethod(lambda _cls, _sid: run_state))
+    monkeypatch.setattr(report_api.ZepGraphMemoryManager, "get_updater", classmethod(lambda _cls, _sid: None))
+    monkeypatch.setattr(report_api.ReportManager, "get_report_by_simulation", classmethod(lambda _cls, _sid: None))
+    monkeypatch.setattr(report_api.ReportManager, "save_report", classmethod(lambda _cls, _report: None))
+    monkeypatch.setattr(report_api, "TaskManager", Tasks)
+    monkeypatch.setattr(report_api.threading, "Thread", ParkedThread)
+
+    app = Flask(__name__)
+    report_id = None
+    try:
+        with app.test_request_context("/api/report/generate", method="POST", json={"simulation_id": "sim-1"}):
+            body, status = _json_result(report_api.generate_report())
+        report_id = (body.get("data") or {}).get("report_id")
+        assert status == 200, body
+        assert len(started) == 1
+    finally:
+        if report_id:
+            unregister_graph_reader("graph-1", report_id)

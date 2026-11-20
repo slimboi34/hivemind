@@ -108,3 +108,48 @@ def test_owner_can_give_todays_runs_back(client):
     res = client.post('/api/admin/quota/reset', headers={'X-Admin-Token': 'owner-token'})
     assert res.status_code == 200 and res.get_json()['data']['cleared']['runs'] == 1
     assert client.post(url, headers=visitor('1.1.1.1')).status_code == LET_THROUGH
+
+
+def test_existing_report_is_returned_not_counted(client, monkeypatch):
+    monkeypatch.setattr(public_mode, '_has_report', lambda sid: sid == 'sim_hist')
+    for _ in range(3):  # asking for an existing report is free, however often
+        assert client.post('/api/report/generate', json={'simulation_id': 'sim_hist'}).status_code == LET_THROUGH
+    # a run without a report gets exactly one
+    assert client.post('/api/report/generate', json={'simulation_id': 'sim_new'}).status_code == LET_THROUGH
+    assert client.post('/api/report/generate', json={'simulation_id': 'sim_new'}).status_code == 403
+    # forcing a rewrite stays off
+    assert client.post('/api/report/generate',
+                       json={'simulation_id': 'sim_hist', 'force_regenerate': True}).status_code == 403
+
+
+def test_visitor_addresses_are_not_stored(client, tmp_path):
+    client.post('/api/graph/ontology/generate', headers=visitor('203.0.113.7'))
+    assert '203.0.113.7' not in (tmp_path / 'public_quota.json').read_text()
+
+
+def test_tracebacks_are_not_sent_to_visitors(monkeypatch, tmp_path):
+    monkeypatch.setenv('HIVEMIND_PUBLIC', '1')
+    monkeypatch.setattr(public_mode, '_QUOTA_PATH', str(tmp_path / 'q.json'))
+    app = Flask(__name__)
+    public_mode.register(app)
+
+    @app.route('/api/boom')
+    def boom():
+        from flask import jsonify
+        return jsonify({'success': False, 'error': 'broke', 'traceback': 'File "/app/x.py", line 1'}), 500
+
+    body = app.test_client().get('/api/boom').get_json()
+    assert body == {'success': False, 'error': 'broke'}
+
+
+def test_finished_rounds_do_not_block_the_next_run(monkeypatch):
+    from types import SimpleNamespace
+    from app.services.simulation_runner import SimulationRunner, RunnerStatus
+    proc = SimpleNamespace(poll=lambda: None)  # process still alive (agents kept up for interviews)
+    monkeypatch.setattr(SimulationRunner, '_processes', {'s1': proc})
+    state = SimpleNamespace(runner_status=RunnerStatus.RUNNING, ready_for_report=True)
+    monkeypatch.setattr(SimulationRunner, '_run_states', {'s1': state})
+    assert public_mode._simulation_running() is False
+    state.ready_for_report = False
+    monkeypatch.setattr(SimulationRunner, '_check_all_platforms_completed', classmethod(lambda cls, s: False))
+    assert public_mode._simulation_running() is True
