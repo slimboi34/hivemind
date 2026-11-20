@@ -235,3 +235,34 @@ def test_flush_deadline_keeps_unattempted_platform_for_a_safe_retry(monkeypatch)
     updater._flush_remaining(deadline=1.0)
     assert updater._platform_buffers["reddit"] == []
     assert len(writes) == 2
+
+
+
+def test_stop_updater_releases_only_when_everything_was_delivered(monkeypatch):
+    from app.services.zep_graph_memory_updater import (
+        ZepGraphMemoryManager, ZepIngestionStillProcessing,
+    )
+
+    class Updater:
+        def __init__(self, error):
+            self.error = error
+
+        def stop(self, timeout=None):
+            raise self.error
+
+    processing = Updater(ZepIngestionStillProcessing(7))
+    monkeypatch.setitem(ZepGraphMemoryManager._updaters, "sim-a", processing)
+    # default: still blocks, so the run's final clean-up retries
+    import pytest
+    with pytest.raises(ZepIngestionStillProcessing):
+        ZepGraphMemoryManager.stop_updater("sim-a")
+    assert ZepGraphMemoryManager._updaters.get("sim-a") is processing
+    # after the last round: release it, report how many Zep is still processing
+    assert ZepGraphMemoryManager.stop_updater("sim-a", timeout=1, release_if_only_processing=True) == 7
+    assert "sim-a" not in ZepGraphMemoryManager._updaters
+
+    undelivered = Updater(RuntimeError("2 Zep activity batch(es) failed"))
+    monkeypatch.setitem(ZepGraphMemoryManager._updaters, "sim-b", undelivered)
+    with pytest.raises(RuntimeError):
+        ZepGraphMemoryManager.stop_updater("sim-b", timeout=1, release_if_only_processing=True)
+    assert ZepGraphMemoryManager._updaters.get("sim-b") is undelivered

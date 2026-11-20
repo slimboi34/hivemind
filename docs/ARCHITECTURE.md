@@ -326,9 +326,12 @@ the same time. The main guards:
 - **Per-simulation finalisation lock** (`SimulationRunner._finalization_lock`). Natural
   completion, manual stop and graph-memory drain all publish the final status under it, so
   only one path decides the outcome.
-- **Ingestion barrier.** While graph memory is still being written, the run is reported as
-  `stopping`, not `completed`, and report generation is refused. A report never reads a
-  half-written graph.
+- **Ingestion barrier.** While agent activity is still being sent to Zep, report generation
+  is refused, so a report never starts before the run's memories have been delivered. After
+  the last round Hivemind also waits up to `HIVEMIND_MEMORY_WAIT_SECONDS` (120 s) for Zep to
+  process them; if Zep is slower than that, the report may start anyway (every batch has been
+  delivered and Zep finishes on its own), and the log says how many episodes were still
+  processing. A batch that failed to send still blocks.
 - **Idempotent Zep writes.** Creating a graph and adding a batch are not retried blindly.
   The graph id is generated locally and saved before the create call. Each batch carries a
   deterministic `hivemind_operation_id` (a SHA-256 of the graph id and the chunk text), saved

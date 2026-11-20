@@ -20,7 +20,7 @@ def _state():
 def test_drains_graph_memory_then_marks_ready(monkeypatch, saved):
     stopped = []
     monkeypatch.setattr(runner_module.ZepGraphMemoryManager, "stop_updater",
-                        classmethod(lambda _cls, sid: stopped.append(sid)))
+                        classmethod(lambda _cls, sid, **_kw: stopped.append(sid) or 0))
     SimulationRunner._graph_memory_enabled["sim-r"] = True
     state = _state()
 
@@ -33,7 +33,7 @@ def test_drains_graph_memory_then_marks_ready(monkeypatch, saved):
 
 
 def test_failed_drain_keeps_report_blocked(monkeypatch, saved):
-    def boom(_cls, _sid):
+    def boom(_cls, _sid, **_kw):
         raise RuntimeError("zep down")
     monkeypatch.setattr(runner_module.ZepGraphMemoryManager, "stop_updater", classmethod(boom))
     SimulationRunner._graph_memory_enabled["sim-r"] = True
@@ -49,7 +49,7 @@ def test_failed_drain_keeps_report_blocked(monkeypatch, saved):
 def test_without_graph_memory_marks_ready_immediately(monkeypatch, saved):
     stopped = []
     monkeypatch.setattr(runner_module.ZepGraphMemoryManager, "stop_updater",
-                        classmethod(lambda _cls, sid: stopped.append(sid)))
+                        classmethod(lambda _cls, sid, **_kw: stopped.append(sid) or 0))
     state = _state()
 
     SimulationRunner._finish_rounds_keep_env(state)
@@ -68,3 +68,22 @@ def test_ready_for_report_survives_save_and_load(tmp_path, monkeypatch):
 
     assert loaded.ready_for_report is True
     assert loaded.to_dict()["ready_for_report"] is True
+
+
+def test_report_can_start_while_zep_still_processes_delivered_memories(monkeypatch, saved):
+    calls = []
+
+    def slow_zep(_cls, sid, **kw):
+        calls.append(kw)
+        return 46  # every batch delivered; Zep still processing 46 episodes
+
+    monkeypatch.setattr(runner_module.ZepGraphMemoryManager, "stop_updater", classmethod(slow_zep))
+    SimulationRunner._graph_memory_enabled["sim-r"] = True
+    state = _state()
+
+    SimulationRunner._finish_rounds_keep_env(state)
+
+    assert calls[0]["release_if_only_processing"] is True
+    assert calls[0]["timeout"] == runner_module.Config.MEMORY_WAIT_BEFORE_REPORT_SECONDS
+    assert state.ready_for_report is True
+    assert "sim-r" not in SimulationRunner._graph_memory_enabled

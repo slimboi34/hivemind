@@ -46,6 +46,9 @@ class Config:
     
     # OASIS模拟配置
     OASIS_DEFAULT_MAX_ROUNDS = int(os.environ.get('OASIS_DEFAULT_MAX_ROUNDS', '10'))
+    # After the last round, how long to wait for Zep to process the run's memories before a
+    # report may start anyway (every batch has been delivered by then; Zep finishes on its own)
+    MEMORY_WAIT_BEFORE_REPORT_SECONDS = int(os.environ.get('HIVEMIND_MEMORY_WAIT_SECONDS', '120'))
     OASIS_SIMULATION_DATA_DIR = os.path.join(os.path.dirname(__file__), '../uploads/simulations')
     
     # OASIS平台可用动作配置

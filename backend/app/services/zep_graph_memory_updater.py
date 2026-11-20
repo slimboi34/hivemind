@@ -210,6 +210,14 @@ class _DrainDeadlineExceeded(TimeoutError):
         self.processed_count = processed_count
 
 
+class ZepIngestionStillProcessing(TimeoutError):
+    """Every batch reached Zep, but Zep has not finished processing all of them yet."""
+
+    def __init__(self, pending: int):
+        super().__init__(f"Zep simulation ingestion timed out with {pending} episode(s) pending")
+        self.pending = pending
+
+
 class ZepGraphMemoryUpdater:
     """
     Zep图谱记忆更新器
@@ -310,9 +318,12 @@ class ZepGraphMemoryUpdater:
         self._worker_thread.start()
         logger.info(f"ZepGraphMemoryUpdater started: graph_id={self.graph_id}")
     
-    def stop(self):
-        """Drain the worker, flush tail events, and wait for Cloud ingestion."""
-        deadline = time.time() + ZEP_INGESTION_WAIT_TIMEOUT_SECONDS
+    def stop(self, timeout: float | None = None):
+        """Drain the worker, flush tail events, and wait for Cloud ingestion.
+
+        timeout: seconds to wait in total (default ZEP_INGESTION_WAIT_TIMEOUT_SECONDS).
+        """
+        deadline = time.time() + (ZEP_INGESTION_WAIT_TIMEOUT_SECONDS if timeout is None else timeout)
         # Serialize the accepting->closed transition with add_activity's
         # check+enqueue operation. This closes the small race where a producer
         # could enqueue after both the worker and final flush had exited.
@@ -605,10 +616,7 @@ class ZepGraphMemoryUpdater:
             deadline = time.time() + ZEP_INGESTION_WAIT_TIMEOUT_SECONDS
         while pending:
             if time.time() >= deadline:
-                raise TimeoutError(
-                    f"Zep simulation ingestion timed out with {len(pending)} "
-                    "episode(s) pending"
-                )
+                raise ZepIngestionStillProcessing(len(pending))
             for episode_uuid in list(pending):
                 episode = call_zep_read_with_retry(
                     lambda: self.client.graph.episode.get(uuid_=episode_uuid),
@@ -727,22 +735,38 @@ class ZepGraphMemoryManager:
         return True
     
     @classmethod
-    def stop_updater(cls, simulation_id: str):
-        """停止并移除模拟的更新器"""
+    def stop_updater(cls, simulation_id: str, timeout: float | None = None,
+                     release_if_only_processing: bool = False) -> int:
+        """Stop and remove a simulation's updater.
+
+        Returns how many episodes Zep was still processing when the updater was
+        released (0 after a complete drain). With release_if_only_processing, an
+        updater whose every batch was delivered is released even if Zep has not
+        finished processing them within the timeout: nothing is left to send, and
+        Zep finishes the work on its own.
+        """
         with cls._lock:
             updater = cls._updaters.get(simulation_id)
         if updater is None:
-            return
+            return 0
 
         # Do not hold the manager lock through up to several minutes of Cloud
         # polling. Crucially, only remove the updater after a successful drain;
         # on failure it remains visible to report/deletion barriers and can be
         # stopped again.
-        updater.stop()
+        still_processing = 0
+        try:
+            updater.stop(timeout=timeout)
+        except ZepIngestionStillProcessing as waiting:
+            if not release_if_only_processing:
+                raise
+            still_processing = waiting.pending
         with cls._lock:
             if cls._updaters.get(simulation_id) is updater:
                 cls._updaters.pop(simulation_id, None)
-        logger.info(f"Stopped graph memory updater: simulation_id={simulation_id}")
+        logger.info(f"Stopped graph memory updater: simulation_id={simulation_id}"
+                    + (f" ({still_processing} episode(s) still processing in Zep)" if still_processing else ""))
+        return still_processing
     
     # 防止 stop_all 重复调用的标志
     _stop_all_done = False

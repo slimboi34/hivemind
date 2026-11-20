@@ -900,9 +900,23 @@ class SimulationRunner:
         simulation_id = state.simulation_id
         if cls._graph_memory_enabled.get(simulation_id, False):
             try:
-                ZepGraphMemoryManager.stop_updater(simulation_id)
+                # Wait a little for Zep to process the run's memories, but don't hold
+                # the report hostage to Zep's queue: once every batch has been
+                # delivered, the report can start while Zep finishes processing.
+                still_processing = ZepGraphMemoryManager.stop_updater(
+                    simulation_id,
+                    timeout=Config.MEMORY_WAIT_BEFORE_REPORT_SECONDS,
+                    release_if_only_processing=True,
+                )
                 cls._graph_memory_enabled.pop(simulation_id, None)
-                logger.info("Graph memory drained after the final round: %s", simulation_id)
+                if still_processing:
+                    logger.warning(
+                        "All agent memories were delivered to Zep; %s are still being processed "
+                        "there, so the report may not see the very latest: %s",
+                        still_processing, simulation_id,
+                    )
+                else:
+                    logger.info("Graph memory drained after the final round: %s", simulation_id)
             except Exception as error:
                 logger.error(f"Early graph memory drain failed, will retry at exit: {error}")
                 return

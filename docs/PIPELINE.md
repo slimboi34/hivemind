@@ -443,9 +443,14 @@ extracts new facts and relationships from them, with timestamps. This is how the
 agent's graph searches can see what happened in the simulation, not just what the seed
 documents said.
 
-At the end of the rounds the updater flushes what is left and waits for Zep to process the
-episodes. Until that is done the run is not reported as finished and reports are refused. A
-failed drain leaves the run blocked and the final status becomes `failed`.
+At the end of the rounds the updater flushes what is left and waits up to
+`HIVEMIND_MEMORY_WAIT_SECONDS` (default 120) for Zep to process the episodes. Every batch must
+have been delivered before a report can start; Zep's own processing is not waited on beyond
+that limit, because on the free tier it can take longer than ten minutes and a visitor would
+otherwise wait that long for the report button. When Zep is still processing, the run is
+marked ready for a report anyway and the log records how many episodes were pending; the
+report may then miss the very latest memories. A batch that failed to send leaves the run
+blocked, and the final status becomes `failed`.
 
 ## 5. Report
 

@@ -83,6 +83,7 @@ Notes:
 
 | Variable | Read in | Default | Effect |
 | --- | --- | --- | --- |
+| `HIVEMIND_MEMORY_WAIT_SECONDS` | `config.py`, `simulation_runner.py` | `120` | After the last round, how long to wait for Zep to process the run's memories before a report may start anyway. Every batch must have been delivered first. |
 | `OASIS_DEFAULT_MAX_ROUNDS` | `config.py`, `api/simulation.py`, `public_mode.py` | `10` | Round cap applied when a start request sets no `max_rounds`. `0` removes the cap. In public mode it is a ceiling for every request, and `/api/public/status` reports it as `max_rounds`. |
 | `HIVEMIND_EMBED_BATCH` | `scripts/oasis_patches.py` | `32` | How many texts the Twitter recommender's twhin-bert model embeds per forward pass. Lower uses less memory; the embeddings are identical either way. Minimum 1. |
 | `HIVEMIND_ENV_LIFETIME_MINUTES` | `scripts/run_parallel_simulation.py` | unset (keep alive until closed) | After the last round, close the kept-alive agents after this many minutes. `0` or unset keeps them until `close-env`, a stop or a restart. The Docker image sets `20`. |
