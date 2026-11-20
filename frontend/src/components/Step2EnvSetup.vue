@@ -704,20 +704,26 @@ let lastLoggedConfigStage = ''
 const useCustomRounds = ref(false) // use the automatically configured round count by default
 const customMaxRounds = ref(40)   // 40 rounds recommended by default
 
-// Watch stage to update phase. currentStage holds the backend's localised stage
-// name, so the Chinese names below are what it sends when the locale is Chinese
-// (locales/zh.json progress.generatingProfiles / generatingSimConfig / preparingScripts).
+// Watch the preparation stage to move the phase on. currentStage holds the backend's stage
+// key (progress_detail.current_stage). The fallback path, for a backend that only sends a
+// message, carries the localised stage name, which is mapped back to its key here.
 watch(currentStage, (newStage) => {
-  if (newStage === '生成Agent人设' || newStage === 'generating_profiles') {
+  const byName = {
+    [t('progress.generatingProfiles')]: 'generating_profiles',
+    [t('progress.generatingSimConfig')]: 'generating_config',
+    [t('progress.preparingScripts')]: 'copying_scripts',
+  }
+  const stage = byName[newStage] || newStage
+  if (stage === 'generating_profiles') {
     phase.value = 1
-  } else if (newStage === '生成模拟配置' || newStage === 'generating_config') {
+  } else if (stage === 'generating_config') {
     phase.value = 2
     // Config generation has started: begin polling the config
     if (!configTimer) {
       addLog(t('log.startGeneratingConfig'))
       startConfigPolling()
     }
-  } else if (newStage === '准备模拟脚本' || newStage === 'copying_scripts') {
+  } else if (stage === 'copying_scripts') {
     phase.value = 2 // still part of the config phase
   }
 })
@@ -923,7 +929,7 @@ const pollPrepareStatus = async () => {
       
       // Parse the stage info and log the details
       if (data.progress_detail) {
-        currentStage.value = data.progress_detail.current_stage_name || ''
+        currentStage.value = data.progress_detail.current_stage || data.progress_detail.current_stage_name || ''
         
         // Log detailed progress (without repeats)
         const detail = data.progress_detail
