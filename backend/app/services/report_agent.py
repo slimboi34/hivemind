@@ -2545,24 +2545,28 @@ class ReportManager:
     
     @classmethod
     def get_report_by_simulation(cls, simulation_id: str) -> Optional[Report]:
-        """根据模拟ID获取报告"""
+        """The simulation's report: the newest completed one, else the newest of any status.
+
+        A run can have more than one report (a rewrite, or an earlier attempt that
+        failed); directory order is arbitrary, so pick deliberately.
+        """
         cls._ensure_reports_dir()
-        
+
+        matches = []
         for item in os.listdir(cls.REPORTS_DIR):
             item_path = os.path.join(cls.REPORTS_DIR, item)
-            # 新格式：文件夹
-            if os.path.isdir(item_path):
+            if os.path.isdir(item_path):            # current format: one folder per report
                 report = cls.get_report(item)
-                if report and report.simulation_id == simulation_id:
-                    return report
-            # 兼容旧格式：JSON文件
-            elif item.endswith('.json'):
-                report_id = item[:-5]
-                report = cls.get_report(report_id)
-                if report and report.simulation_id == simulation_id:
-                    return report
-        
-        return None
+            elif item.endswith('.json'):            # older format: one JSON file
+                report = cls.get_report(item[:-5])
+            else:
+                continue
+            if report and report.simulation_id == simulation_id:
+                matches.append(report)
+        if not matches:
+            return None
+        matches.sort(key=lambda r: (r.status == ReportStatus.COMPLETED, r.created_at or ''), reverse=True)
+        return matches[0]
     
     @classmethod
     def list_reports(cls, simulation_id: Optional[str] = None, limit: int = 50) -> List[Report]:
