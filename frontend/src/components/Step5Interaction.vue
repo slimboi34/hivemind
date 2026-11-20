@@ -295,14 +295,14 @@
               class="chat-input"
               :placeholder="$t('step5.chatInputPlaceholder')"
               @keydown.enter.exact.prevent="sendMessage"
-              :disabled="isSending || (chatTarget === 'agent' && (!selectedAgent || agentsOffline))"
+              :disabled="isSending || !simulationId || (chatTarget === 'agent' && (!selectedAgent || agentsOffline))"
               rows="1"
               ref="chatInputRef"
             ></textarea>
             <button 
               class="send-btn"
               @click="sendMessage"
-              :disabled="!chatInput.trim() || isSending || (chatTarget === 'agent' && (!selectedAgent || agentsOffline))"
+              :disabled="!chatInput.trim() || isSending || !simulationId || (chatTarget === 'agent' && (!selectedAgent || agentsOffline))"
             >
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -367,7 +367,7 @@
             <div v-if="agentsOffline" class="offline-note">{{ $t('step5.agentsOffline') }}</div>
             <button 
               class="survey-submit-btn"
-              :disabled="agentsOffline || selectedAgents.size === 0 || !surveyQuestion.trim() || isSurveying"
+              :disabled="agentsOffline || !simulationId || selectedAgents.size === 0 || !surveyQuestion.trim() || isSurveying"
               @click="submitSurvey"
             >
               <span v-if="isSurveying" class="loading-spinner"></span>
@@ -645,7 +645,8 @@ const renderMarkdown = (content) => {
 
 // Chat Methods
 const sendMessage = async () => {
-  if (!chatInput.value.trim() || isSending.value) return
+  // The run id arrives with the report data; until then there is nothing to ask.
+  if (!chatInput.value.trim() || isSending.value || !props.simulationId) return
   
   const message = chatInput.value.trim()
   chatInput.value = ''
