@@ -183,7 +183,7 @@ A few decisions worth knowing about, each explained in the docs:
 | Layer | Technology |
 | --- | --- |
 | Frontend | Vue 3, Vite 7, vue-router, vue-i18n, D3, axios |
-| Backend | Python 3.12, Flask 3, flask-cors; dependencies locked with uv |
+| Backend | Python 3.12, Flask 3, flask-cors, served by waitress; dependencies locked with uv |
 | Simulation engine | CAMEL-AI OASIS 0.2.5 (camel-ai 0.2.78), PyTorch (CPU), `Twitter/twhin-bert-base` for the feed recommender |
 | Knowledge graph and memory | Zep Cloud (`zep-cloud` 3.25.0) |
 | Language model | Claude Haiku 5.5 through Anthropic's OpenAI-compatible API, via the `openai` SDK; any OpenAI-compatible provider works |

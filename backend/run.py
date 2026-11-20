@@ -41,8 +41,20 @@ def main():
     port = int(os.environ.get('FLASK_PORT') or os.environ.get('PORT') or 5001)
     debug = Config.DEBUG
     
-    # Start the server
-    app.run(host=host, port=port, debug=debug, threaded=True)
+    if debug:
+        # Flask's development server: auto-reload and the interactive debugger
+        app.run(host=host, port=port, debug=True, threaded=True)
+        return
+
+    # Production: waitress, a pure-Python threaded WSGI server. It keeps the single-process
+    # model the app relies on (running simulations and task progress live in this process,
+    # and its signal handlers stop simulations on shutdown). Some requests legitimately wait
+    # minutes for the model (interviews, report chat), so idle connections get a long timeout.
+    from waitress import serve
+    threads = int(os.environ.get('HIVEMIND_THREADS', '32'))
+    print(f"Hivemind backend on http://{host}:{port} (waitress, {threads} threads)", flush=True)
+    serve(app, host=host, port=port, threads=threads, channel_timeout=600,
+          connection_limit=500, ident='hivemind')
 
 
 if __name__ == '__main__':

@@ -282,9 +282,8 @@ curl -X POST -H "X-Admin-Token: $HIVEMIND_ADMIN_TOKEN" \
 
 ## Known caveats
 
-- **Development server.** Flask runs on Werkzeug's development server (`app.run`, threaded), in
-  a single process. It is enough for a capped demo site; it is not a production WSGI setup. More
-  processes would break the in-memory locks and registries (see
+- **One process.** The app runs on waitress, a production WSGI server, with a thread pool in a
+  single process. More processes would break the in-memory locks and registries (see
   [ARCHITECTURE.md](./ARCHITECTURE.md#what-is-kept-in-memory)).
 - **Restarts end live work.** A redeploy stops any running simulation and closes kept-alive
   agents.

@@ -70,7 +70,7 @@ running CAMEL-AI OASIS, which it watches through files.
 | --- | --- | --- |
 | Web app | `frontend/src` (Vue 3, Vite, vue-router, vue-i18n, D3, axios) | The five-step workflow, the Analytics page and the history list. Talks to the API with JSON. |
 | App factory | `backend/app/__init__.py` | Builds the Flask app, enables CORS on `/api/*`, registers the four blueprints, `/health`, public mode, and (when `HIVEMIND_STATIC_DIR` is set) serves the built frontend. |
-| Entry point | `backend/run.py` | Validates config (`LLM_API_KEY`, `ZEP_API_KEY` required; `ZEP_API_URL` rejected), then starts Werkzeug with `threaded=True`. |
+| Entry point | `backend/run.py` | Validates config (`LLM_API_KEY`, `ZEP_API_KEY` required; `ZEP_API_URL` rejected), then serves the app with waitress (`HIVEMIND_THREADS` threads, default 32), or Flask's development server when `FLASK_DEBUG=true`. |
 | Config | `backend/app/config.py` | Loads the repo-root `.env` and exposes settings. See [CONFIGURATION.md](./CONFIGURATION.md). |
 | Public mode | `backend/app/public_mode.py` | A `before_request` guard and `after_request` bookkeeping that turn the app into a capped public website. See [DEPLOYMENT.md](./DEPLOYMENT.md). |
 | Graph API | `backend/app/api/graph.py` | Projects, ontology generation, graph build, task status, graph data. |
@@ -100,9 +100,11 @@ Hivemind runs as one Flask process plus one extra process per running simulation
 
 ### The Flask process
 
-- **Server.** `backend/run.py` calls `app.run(host, port, threaded=True)`. That is Werkzeug's
-  development server with one thread per request. There is a single process and no worker
-  pool. This matters, because several kinds of state live only in that process (see
+- **Server.** `backend/run.py` serves the app with waitress, a pure-Python threaded WSGI
+  server (`HIVEMIND_THREADS` threads, default 32; idle connections time out after 10 minutes
+  because interviews and report chat can wait minutes for the model). With `FLASK_DEBUG=true`
+  it uses Flask's development server instead. Either way there is a single process and no
+  worker pool. This matters, because several kinds of state live only in that process (see
   [What is kept in memory](#what-is-kept-in-memory)).
 - **Long jobs run on daemon threads.** Three endpoints start work that takes minutes and
   return a task id at once:

@@ -129,7 +129,7 @@ These come from the CAMEL-AI OASIS engine and how Hivemind configures it.
   even if a later step fails.
 - **Visitors are identified by IP address** (Railway's `X-Real-IP`). People behind one shared
   address share one allowance.
-- **Development server, single process.** Flask runs on Werkzeug's development server in one
+- **Single process.** The backend runs on waitress (a production WSGI server) in one
   process. State such as running simulations and task progress lives in that process, so it
   cannot be scaled to several workers as is, and a restart ends live runs and kept-alive agents.
 - **Zep free tier.** Graph ingestion and memory write-back count against the Zep plan, which can

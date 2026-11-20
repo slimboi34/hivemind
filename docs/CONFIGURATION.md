@@ -85,6 +85,7 @@ Notes:
 | --- | --- | --- | --- |
 | `HIVEMIND_REPORT_MAX_INTERVIEWS` | `config.py`, `report_agent.py` | `4` | Most simulated people the report agent interviews in one batch (each answers on both platforms). |
 | `HIVEMIND_INTERVIEW_TIMEOUT_SECONDS` | `config.py`, `zep_tools.py` | `420` | How long the report agent waits for a batch of interviews. Under API rate limits a batch of 6 took about 3.5 minutes. |
+| `HIVEMIND_THREADS` | `run.py` | `32` | Worker threads for the waitress server (when `FLASK_DEBUG` is not `true`). |
 | `HIVEMIND_MEMORY_WAIT_SECONDS` | `config.py`, `simulation_runner.py` | `120` | After the last round, how long to wait for Zep to process the run's memories before a report may start anyway. Every batch must have been delivered first. |
 | `OASIS_DEFAULT_MAX_ROUNDS` | `config.py`, `api/simulation.py`, `public_mode.py` | `10` | Round cap applied when a start request sets no `max_rounds`. `0` removes the cap. In public mode it is a ceiling for every request, and `/api/public/status` reports it as `max_rounds`. |
 | `HIVEMIND_EMBED_BATCH` | `scripts/oasis_patches.py` | `32` | How many texts the Twitter recommender's twhin-bert model embeds per forward pass. Lower uses less memory; the embeddings are identical either way. Minimum 1. |

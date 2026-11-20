@@ -174,9 +174,11 @@ the feed-crash fix, cast growth). Known limits are listed in
   (INFORMATION_DYNAMICS, section on fixes).
 - **Cost controls.** The round cap is in. Still to do: per-run budgets, and a cheap model for
   the crowd with a strong model for the report.
-- **Production serving.** Werkzeug's dev server in one process holds tasks, locks and running
-  simulations in memory. A real deployment needs a WSGI server and that state moved out of
-  process.
-- **Finish the translation.** Runtime strings are in English now. The ontology, persona and
+- **Scaling out.** The backend now runs on waitress (a threaded production WSGI server), but
+  still in one process that holds tasks, locks and running simulations in memory. More than
+  one process needs that state moved out of process.
+- **Translation: done.** Code, comments, prompts and logs are in English; Chinese remains only
+  in the optional Chinese UI (`locales/zh.json`, README-ZH.md) and in parsers that read older
+  stored data. The ontology, persona and
   simulation-config prompts, and many code comments, are still written in Chinese.
 - **Slimmer install.** camel-oasis pulls in torch and sentence-transformers.

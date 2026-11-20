@@ -203,7 +203,7 @@ hivemind/
 | `/interaction/:reportId` | `InteractionView.vue` | Step 5: chat, interviews, surveys |
 
 Every step view puts `GraphPanel.vue` (the D3 knowledge graph) beside the step component.
-`views/Process.vue` is not routed (the `Process` route uses `MainView.vue`).
+The `Process` route (`/process/:projectId`) is served by `views/MainView.vue`.
 
 ## Localisation
 
