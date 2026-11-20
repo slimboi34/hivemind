@@ -49,6 +49,10 @@ class Config:
     # After the last round, how long to wait for Zep to process the run's memories before a
     # report may start anyway (every batch has been delivered by then; Zep finishes on its own)
     MEMORY_WAIT_BEFORE_REPORT_SECONDS = int(os.environ.get('HIVEMIND_MEMORY_WAIT_SECONDS', '120'))
+    # Report agent interviews: each person answers on both platforms, and under API rate limits a
+    # batch of 6 took about 3.5 minutes on the live site, longer than the old fixed 180 s wait.
+    REPORT_MAX_INTERVIEWS = int(os.environ.get('HIVEMIND_REPORT_MAX_INTERVIEWS', '4'))
+    REPORT_INTERVIEW_TIMEOUT_SECONDS = int(os.environ.get('HIVEMIND_INTERVIEW_TIMEOUT_SECONDS', '420'))
     OASIS_SIMULATION_DATA_DIR = os.path.join(os.path.dirname(__file__), '../uploads/simulations')
     
     # OASIS平台可用动作配置

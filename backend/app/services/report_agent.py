@@ -954,7 +954,7 @@ class ReportAgent:
                 "description": TOOL_DESC_INTERVIEW_AGENTS,
                 "parameters": {
                     "interview_topic": "Interview topic or a description of what you want to learn (e.g. 'find out what students think about the formaldehyde-in-dormitories incident')",
-                    "max_agents": "Maximum number of agents to interview (optional, default 5, maximum 10)"
+                    "max_agents": "Maximum number of agents to interview (optional, default and maximum 4)"
                 }
             }
         }
@@ -1017,7 +1017,7 @@ class ReportAgent:
                 max_agents = parameters.get("max_agents", 5)
                 if isinstance(max_agents, str):
                     max_agents = int(max_agents)
-                max_agents = min(max_agents, 10)
+                max_agents = max(1, min(max_agents, Config.REPORT_MAX_INTERVIEWS))
                 result = self.zep_tools.interview_agents(
                     simulation_id=self.simulation_id,
                     interview_requirement=interview_topic,
