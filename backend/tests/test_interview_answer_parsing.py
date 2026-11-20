@@ -129,3 +129,20 @@ def test_interview_result_text_is_english():
     assert "### Why these interviewees were chosen\n(selected automatically)" in text
     assert "(no interview records)" in text
     assert text.endswith("### Interview summary and key viewpoints\n(no summary)")
+
+
+def test_key_quotes_come_from_english_sentences(monkeypatch):
+    answer = (
+        "Question 1: I bought at the $111.50 open and I am not selling yet. "
+        "The real test is whether the lock-up schedule is published before employees can sell! "
+        "Short one. "
+        "Question 2: Governance worries me more than the price, because public holders get almost no vote."
+    )
+    service = _service_with_answers(monkeypatch, answer, "")
+
+    quotes = service.interview_agents("sim-1", "IPO", custom_questions=["Q1?", "Q2?"]).interviews[0].key_quotes
+
+    assert "I bought at the $111.50 open and I am not selling yet." in quotes  # decimals don't split sentences
+    assert any(q.startswith("The real test is whether the lock-up schedule") for q in quotes)
+    assert "Short one." not in quotes                                        # too short to be a quote
+    assert all(not q.startswith("Question") for q in quotes)

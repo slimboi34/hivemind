@@ -1453,12 +1453,12 @@ Return the sub-questions as a JSON list."""
                 clean_text = strip_answer_prefixes(clean_text)
                 clean_text = re.sub(r'【[^】]+】', '', clean_text)
 
-                # Strategy 1 (main): extract complete, substantive sentences. The split uses Chinese sentence-ending
-                # punctuation and the leading-punctuation check includes full-width marks, so Chinese answers are handled.
-                sentences = re.split(r'[。！？]', clean_text)
+                # Strategy 1 (main): extract complete, substantive sentences. English sentences end at . ! ?
+                # followed by a space (so "$111.50" is not split); Chinese ones at the full-width marks.
+                sentences = re.split(r'[。！？]|(?<=[.!?])\s+', clean_text)
                 meaningful = [
                     s.strip() for s in sentences
-                    if 20 <= len(s.strip()) <= 150
+                    if 20 <= len(s.strip()) <= 220
                     and not re.match(r'^[\s\W，,；;：:、]+', s.strip())
                     and not s.strip().startswith('{')
                     and not starts_with_answer_label(s.strip())
