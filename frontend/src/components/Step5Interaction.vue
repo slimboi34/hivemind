@@ -730,8 +730,11 @@ const sendToAgent = async (message) => {
     prompt = t('step5.historyPrompt', { history: historyContext, message })
   }
   
+  // Ask one platform: the reply shown is the Reddit one, and each platform's answer is a separate,
+  // slow model call with the agent's whole run in context, so asking both doubled the wait.
   const res = await interviewAgents({
     simulation_id: props.simulationId,
+    platform: 'reddit',
     interviews: [{
       agent_id: selectedAgentIndex.value,
       prompt: prompt
@@ -819,6 +822,7 @@ const submitSurvey = async () => {
     
     const res = await interviewAgents({
       simulation_id: props.simulationId,
+      platform: 'reddit',  // one answer per person, as in 1:1 chat
       interviews: interviews
     })
     

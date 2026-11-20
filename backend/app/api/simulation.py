@@ -2669,7 +2669,8 @@ def interview_agents_batch():
         simulation_id = data.get('simulation_id')
         interviews = data.get('interviews')
         platform = data.get('platform')  # optional: twitter/reddit/None
-        # Each person answers on both platforms; under API rate limits that can pass two minutes.
+        # Each person answers once per requested platform (both if none is given); under API rate
+        # limits one answer can take a couple of minutes.
         timeout = data.get('timeout', 240)
 
         if not simulation_id:
